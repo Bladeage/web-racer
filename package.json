@@ -1,0 +1,10 @@
+{
+  "name": "web-racer",
+  "private": true,
+  "type": "module",
+  "description": "Kart-Rennspiel im Browser. Tests nur mit Node-Standardmodulen.",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "engines": { "node": ">=20" }
+}
