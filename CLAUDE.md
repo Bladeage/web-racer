@@ -13,6 +13,7 @@
 - Vor jedem Commit: Seite lokal starten (`python3 -m http.server 8080`) und im Browser prüfen. Keine Fehler in der Konsole.
 - Berichte an den Nutzer: einfaches Deutsch, kurze Sätze, gesichert und vermutet klar trennen. Der Nutzer hat wenig Code-Praxis. Schritte erklären, ohne zu vereinfachen.
 - Bei offenen Entscheidungen den Vorschlag aus der Übergabe nehmen und im Bericht nennen.
+- Verbesserungen, die auch web-fpv betreffen, an die web-fpv-Sitzung weitergeben (nicht selbst in web-fpv ändern).
 
 ## Festgelegt (02.11.2026)
 
