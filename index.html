@@ -4,20 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Web Racer</title>
-  <style>
-    html, body { margin: 0; height: 100%; background: #87b8e8; overflow: hidden; }
-    canvas { display: block; width: 100%; height: 100%; }
-    #info {
-      position: fixed; left: 12px; top: 10px;
-      font: 14px/1.3 system-ui, sans-serif; color: #fff;
-      text-shadow: 0 1px 2px #0008; pointer-events: none;
-    }
-    #fehler {
-      position: fixed; inset: 0; display: none; place-items: center;
-      font: 16px system-ui, sans-serif; color: #fff; background: #333; padding: 24px; text-align: center;
-    }
-  </style>
-  <!-- Three.js von jsDelivr, exakte Version gepinnt. "three/addons/" brauchen wir ab Etappe 2 (GLTFLoader). -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js von jsDelivr, exakte Version gepinnt. "three/addons/" liefert den GLTFLoader. -->
   <script type="importmap">
     {
       "imports": {
@@ -29,18 +17,76 @@
 </head>
 <body>
   <canvas id="spiel"></canvas>
-  <div id="info">Web Racer</div>
-  <div id="fehler"></div>
+
+  <div id="loading" class="screen show"><div class="panel small">Lade Strecke und Fahrzeuge ...</div></div>
+
+  <div id="menu" class="screen">
+    <div class="panel menu">
+      <h1>Web Racer</h1>
+      <p class="sub">Strecke: <b id="trackName">Waldring</b> &middot; Gegner: 1 KI (neutral)</p>
+      <h2>Fahrer w&auml;hlen</h2>
+      <div id="avatars" class="avatars"></div>
+      <div class="row">
+        <div>
+          <h2>Runden</h2>
+          <div id="laps" class="seg">
+            <button data-laps="1">1</button><button data-laps="3" class="on">3</button><button data-laps="5">5</button>
+          </div>
+        </div>
+        <div>
+          <h2>Lautst&auml;rke</h2>
+          <input id="volume" type="range" min="0" max="100" value="70">
+        </div>
+      </div>
+      <button id="start" class="big">Rennen starten</button>
+      <div class="keys">
+        <span><kbd>W</kbd>/<kbd>&uarr;</kbd> Gas</span>
+        <span><kbd>S</kbd>/<kbd>&darr;</kbd> Bremse, r&uuml;ckw&auml;rts</span>
+        <span><kbd>A</kbd><kbd>D</kbd>/<kbd>&larr;</kbd><kbd>&rarr;</kbd> Lenken</span>
+        <span><kbd>Umschalt links</kbd>/<kbd>Leertaste</kbd> Drift</span>
+        <span><kbd>Esc</kbd> Pause</span>
+      </div>
+      <p class="hint">Drift: Taste halten und lenken. Blaue oder orange Funken? Loslassen gibt einen Mini-Turbo.</p>
+    </div>
+  </div>
+
+  <div id="hud" class="hud">
+    <div class="hud-tl"><div id="hudLap">Runde 1/3</div><div id="hudTime">0:00.00</div><div id="hudBest" class="dim"></div></div>
+    <div class="hud-tr"><span id="hudPos">1.</span><span class="dim" id="hudOf">/2</span></div>
+    <div class="hud-br"><span id="hudSpeed">0</span> <span class="dim">km/h</span></div>
+  </div>
+  <div id="countdown" class="center-big"></div>
+  <div id="banner" class="banner"></div>
+
+  <div id="pause" class="screen">
+    <div class="panel small">
+      <h2>Pause</h2>
+      <button id="resume" class="big">Weiter</button>
+      <button id="restart1">Neu starten</button>
+      <button id="toMenu1">Hauptmen&uuml;</button>
+    </div>
+  </div>
+
+  <div id="result" class="screen">
+    <div class="panel small">
+      <h2 id="resultTitle">Ergebnis</h2>
+      <table id="resultTable"></table>
+      <button id="again" class="big">Nochmal</button>
+      <button id="toMenu2">Hauptmen&uuml;</button>
+    </div>
+  </div>
+
+  <div id="fehler" class="screen"><div class="panel small" id="fehlerText"></div></div>
+
   <script type="module" src="src/main.js"></script>
   <script>
     // Falls das Modul nicht startet (kein Netz, kein WebGL), nach kurzer Zeit einen Hinweis zeigen.
     setTimeout(function () {
       if (!window.spielLaeuft) {
-        var f = document.getElementById('fehler');
-        f.textContent = 'Das Spiel konnte nicht starten. Internetverbindung und WebGL pruefen.';
-        f.style.display = 'grid';
+        document.getElementById('fehlerText').textContent = 'Das Spiel konnte nicht starten. Internetverbindung und WebGL pruefen.';
+        document.getElementById('fehler').classList.add('show');
       }
-    }, 8000);
+    }, 15000);
   </script>
 </body>
 </html>

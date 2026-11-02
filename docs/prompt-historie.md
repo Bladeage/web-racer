@@ -10,3 +10,5 @@ Antworten auf Rückfragen stehen als eigene Einträge, weil sie Entscheidungen e
 | 3 | 02.11.2026 | Antwort: Repo ist leer. Leeren Start-Commit nach `main` pushen, Etappe 1 per Draft-PR nach `main`. | Branch `main`, PR |
 | 4 | 02.11.2026 | Verbesserungen, die web-fpv betreffen, an die Sitzung web-fpv weitergeben. | Regel in CLAUDE.md |
 | 5 | 02.11.2026 | PR #1 selbst mergen. | Merge PR #1 |
+| 6 | 02.11.2026 | GitHub Pages ist umgesetzt. | Online-Prüfung Etappe 1 |
+| 7 | 02.11.2026 | Weiter, autark: Hauptmenü, erste Map, erstes Modell, erste Avatare, Fahrphysik, Fahrsound, Drift, Kamera, ein KI-Gegner (neutrale Fahrweise). | Spielbare Version mit Menü, Strecke, KI |
