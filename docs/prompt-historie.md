@@ -9,3 +9,4 @@ Antworten auf Rückfragen stehen als eigene Einträge, weil sie Entscheidungen e
 | 2 | 02.11.2026 | Antworten: Drift Spieler 2 auf `ControlRight`; Split-Screen oben/unten; Lizenz MIT; Name "Web Racer". | CLAUDE.md, Etappe 1 |
 | 3 | 02.11.2026 | Antwort: Repo ist leer. Leeren Start-Commit nach `main` pushen, Etappe 1 per Draft-PR nach `main`. | Branch `main`, PR |
 | 4 | 02.11.2026 | Verbesserungen, die web-fpv betreffen, an die Sitzung web-fpv weitergeben. | Regel in CLAUDE.md |
+| 5 | 02.11.2026 | PR #1 selbst mergen. | Merge PR #1 |
