@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web Racer</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #87b8e8; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #info {
+      position: fixed; left: 12px; top: 10px;
+      font: 14px/1.3 system-ui, sans-serif; color: #fff;
+      text-shadow: 0 1px 2px #0008; pointer-events: none;
+    }
+    #fehler {
+      position: fixed; inset: 0; display: none; place-items: center;
+      font: 16px system-ui, sans-serif; color: #fff; background: #333; padding: 24px; text-align: center;
+    }
+  </style>
+  <!-- Three.js von jsDelivr, exakte Version gepinnt. "three/addons/" brauchen wir ab Etappe 2 (GLTFLoader). -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="spiel"></canvas>
+  <div id="info">Web Racer</div>
+  <div id="fehler"></div>
+  <script type="module" src="src/main.js"></script>
+  <script>
+    // Falls das Modul nicht startet (kein Netz, kein WebGL), nach kurzer Zeit einen Hinweis zeigen.
+    setTimeout(function () {
+      if (!window.spielLaeuft) {
+        var f = document.getElementById('fehler');
+        f.textContent = 'Das Spiel konnte nicht starten. Internetverbindung und WebGL pruefen.';
+        f.style.display = 'grid';
+      }
+    }, 8000);
+  </script>
+</body>
+</html>
