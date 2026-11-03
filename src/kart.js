@@ -32,8 +32,10 @@ export const KART = {
   startBoost: 1.2,      // s Schub beim Turbo-Start
 };
 
-export function createKart(x, z, heading) {
+// stats: Abweichungen von KART fuer diesen Fahrer (siehe avatars.js).
+export function createKart(x, z, heading, stats) {
   return {
+    P: stats ? { ...KART, ...stats } : KART,
     x, z, heading, vx: 0, vz: 0,
     speed: 0,        // Geschwindigkeit in Fahrtrichtung (m/s)
     slip: 0,         // seitliche Geschwindigkeit (m/s)
@@ -55,7 +57,7 @@ export function chargeLevel(k) {
 }
 
 // inp: { throttle 0..1, brake 0..1, steer -1..1 (rechts positiv), drift bool }
-export function stepKart(k, inp, dt, P = KART) {
+export function stepKart(k, inp, dt, P = k.P || KART) {
   k.boostStart = false;
   let fx = Math.sin(k.heading), fz = Math.cos(k.heading);
   let vf = k.vx * fx + k.vz * fz;

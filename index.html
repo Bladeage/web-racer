@@ -23,10 +23,18 @@
   <div id="menu" class="screen">
     <div class="panel menu">
       <h1>Web Racer</h1>
-      <p class="sub">Strecke: <b id="trackName">Waldring</b> &middot; Gegner: 1 KI (neutral)</p>
+      <p class="sub">Gegner: 1 KI (neutral)</p>
       <h2>Fahrer w&auml;hlen</h2>
       <div id="avatars" class="avatars"></div>
       <div class="row">
+        <div>
+          <h2>Strecke</h2>
+          <div class="trackrow">
+            <div id="tracks" class="seg"></div>
+            <canvas id="trackPreview" width="96" height="60"></canvas>
+            <span id="trackInfo" class="dim"></span>
+          </div>
+        </div>
         <div>
           <h2>Spieler</h2>
           <div id="players" class="seg">
