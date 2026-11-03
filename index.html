@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Web Racer</title>
   <link rel="stylesheet" href="style.css">
   <!-- Three.js von jsDelivr, exakte Version gepinnt. "three/addons/" liefert den GLTFLoader. -->
@@ -46,6 +46,7 @@
         <span><kbd>Umschalt links</kbd>/<kbd>Leertaste</kbd> Drift</span>
         <span><kbd>Esc</kbd> Pause</span>
       </div>
+      <p class="hint touch-hint">Touch: links lenken, rechts Gas, Bremse und Drift. Am besten im Querformat.</p>
       <p class="hint">Drift: Taste halten und lenken. Blaue oder orange Funken? Loslassen gibt einen Mini-Turbo.</p>
     </div>
   </div>
@@ -54,6 +55,15 @@
     <div class="hud-tl"><div id="hudLap">Runde 1/3</div><div id="hudTime">0:00.00</div><div id="hudBest" class="dim"></div></div>
     <div class="hud-tr"><span id="hudPos">1.</span><span class="dim" id="hudOf">/2</span></div>
     <div class="hud-br"><span id="hudSpeed">0</span> <span class="dim">km/h</span></div>
+  </div>
+  <div id="touch" class="touch">
+    <div id="steerPad" class="steer"><span>&#9664;</span><span>&#9654;</span><i id="steerKnob"></i></div>
+    <div class="pedals">
+      <button id="tDrift" class="tbtn drift">Drift</button>
+      <button id="tBrake" class="tbtn brake">Bremse</button>
+      <button id="tGas" class="tbtn gas">Gas</button>
+    </div>
+    <button id="tPause" class="tpause" aria-label="Pause">II</button>
   </div>
   <div id="countdown" class="center-big"></div>
   <div id="banner" class="banner"></div>

@@ -7,7 +7,7 @@ import { createKart, stepKart, collideWall, collideKarts } from './kart.js';
 import { createAi, aiInput } from './ai.js';
 import { createRace, stepRace, canDrive } from './race.js';
 import { AVATARS } from './avatars.js';
-import { initInput, readKeys, KEYS_SOLO } from './input.js';
+import { initInput, readSolo, initTouch, resetTouch, isTouchDevice } from './input.js';
 import { createChaseCam, updateChaseCam } from './camera.js';
 import { buildWorld, createKartView, updateKartView, removeKartView, createSmoke, updateSmoke, clearSmoke, renderPortraits } from './view.js';
 import { createSound, initSound, setVolume, startRaceSound, stopRaceSound, updateRaceSound, playImpact, playBoost, playBeep } from './sound.js';
@@ -23,7 +23,8 @@ const AUTOPILOT = new URLSearchParams(location.search).has('autopilot');
 // Renderer und Szene. Wenig Licht, keine Schatten (Split-Screen zeichnet spaeter doppelt).
 const canvas = document.getElementById('spiel');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Auf Touch-Geraeten (meist Handys) etwas niedrigere Aufloesung, damit es fluessig bleibt.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouchDevice() ? 1.5 : 2));
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fcbf0);
 scene.fog = new THREE.Fog(0x9fcbf0, 90, 260);
@@ -96,6 +97,14 @@ async function boot() {
     onMenu: () => enterMenu(),
   });
   initInput(onKey);
+  initTouch({
+    root: document.getElementById('touch'), pad: document.getElementById('steerPad'), knob: document.getElementById('steerKnob'),
+    gas: document.getElementById('tGas'), brake: document.getElementById('tBrake'), drift: document.getElementById('tDrift'),
+  });
+  document.getElementById('tPause').addEventListener('click', () => { if (mode === 'race') pause(); });
+  // Touch-Knoepfe zeigen, sobald das Geraet Touch kann oder zum ersten Mal beruehrt wird.
+  if (isTouchDevice()) document.body.classList.add('touch-mode');
+  window.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') document.body.classList.add('touch-mode'); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'race') pause(); });
 
   enterMenu();
@@ -159,6 +168,7 @@ async function startRace() {
 
 function pause() {
   mode = 'paused';
+  resetTouch();
   ui.showScreen('pause');
 }
 
@@ -174,7 +184,7 @@ function step(dt) {
   g.karts.forEach((k, i) => {
     let inp = NO_INPUT;
     if (drive) {
-      if (i === 0 && me.finishTime === null && !AUTOPILOT) inp = readKeys(KEYS_SOLO);
+      if (i === 0 && me.finishTime === null && !AUTOPILOT) inp = readSolo();
       else inp = aiInput(g.ais[i], k, track);
     }
     stepKart(k, inp, dt);
@@ -240,8 +250,12 @@ function frame(now) {
     ui.updateHud(g.race.entries[0], g.race, g.karts[0].speed);
     updateRaceSound(snd, g.karts, g.karts[0], mode !== 'race');
   }
+  // Touch-Knoepfe nur waehrend der Fahrt (nicht im Menue, in der Pause oder beim Ergebnis).
+  const racing = mode === 'race' && game !== null && !game.resultShown;
+  if (racing !== wasRacing) { wasRacing = racing; document.body.classList.toggle('racing', racing); if (!racing) resetTouch(); }
   renderer.render(scene, camera);
 }
+let wasRacing = false;
 
 boot().catch((e) => {
   console.error(e);
