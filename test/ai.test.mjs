@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTrack, TRACKS, pointAt } from '../src/track.js';
+import { buildTrack, TRACKS, pointAt, groundHeight, inPuddle } from '../src/track.js';
 import { AVATARS } from '../src/avatars.js';
-import { createKart, stepKart, collideWall, checkPads } from '../src/kart.js';
+import { createKart, stepKart, collideWall, checkPads, stepVertical } from '../src/kart.js';
 import { createAi, aiInput } from '../src/ai.js';
 import { createRace, stepRace } from '../src/race.js';
 
@@ -22,6 +22,7 @@ for (const def of TRACKS) for (const av of [AVATARS[0], AVATARS[2]]) test(`KI ($
     stepKart(k, inp, DT);
     collideWall(k, track);
     checkPads(k, track);
+    stepVertical(k, groundHeight(track, k.s, k.d), inPuddle(track, k.s, k.d), DT);
     if (k.wallHit > 2) hard++;
     maxD = Math.max(maxD, Math.abs(k.d));
   }
