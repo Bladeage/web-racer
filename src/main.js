@@ -3,8 +3,8 @@
 // Split-Screen: ein Renderer, zwei Kameras, obere und untere Bildhaelfte (setViewport, setScissor).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { buildTrack, TRACKS, pointAt } from './track.js';
-import { createKart, stepKart, collideWall, collideKarts, checkPads } from './kart.js';
+import { buildTrack, TRACKS, pointAt, groundHeight, inPuddle } from './track.js';
+import { createKart, stepKart, collideWall, collideKarts, checkPads, stepVertical } from './kart.js';
 import { createAi, aiInput } from './ai.js';
 import { createRace, stepRace, canDrive, noteStartInput, START_WINDOW } from './race.js';
 import { AVATARS } from './avatars.js';
@@ -15,7 +15,7 @@ import { createSound, initSound, setVolume, startRaceSound, stopRaceSound, updat
 import * as ui from './ui.js';
 
 const DT = 1 / 120;
-const MODELS = ['track-straight', 'track-corner', 'track-finish', 'decoration-forest', 'decoration-tents', 'decoration-empty',
+const MODELS = ['track-straight', 'track-corner', 'track-finish', 'track-bump', 'decoration-forest', 'decoration-tents', 'decoration-empty',
   ...AVATARS.map(a => a.model)];
 const NO_INPUT = { throttle: 0, brake: 0, steer: 0, drift: false };
 // Testhilfe: ?autopilot in der Adresse laesst die KI auch die Spieler-Karts fahren.
@@ -294,6 +294,8 @@ function step(dt) {
     stepKart(k, inp, dt);
     collideWall(k, track);
     checkPads(k, track);
+    stepVertical(k, groundHeight(track, k.s, k.d), inPuddle(track, k.s, k.d), dt);
+    if (k.landed > 6) playImpact(snd, k.landed * 0.8, k, listeners());
     g.impactCd[i] = Math.max(0, g.impactCd[i] - dt);
     if (k.wallHit > 2 && g.impactCd[i] === 0) { playImpact(snd, k.wallHit, k, listeners()); g.impactCd[i] = 0.3; }
     if (k.boostStart) playBoost(snd, k, listeners());

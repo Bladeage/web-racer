@@ -30,6 +30,10 @@ export const KART = {
   boostAccel: 22,       // m/s^2 zusaetzlich im Schub
   padBoost: 0.9,        // s Schub durch ein Boost-Feld
   startBoost: 1.2,      // s Schub beim Turbo-Start
+  gravity: 30,          // m/s^2, etwas mehr als echt (9,81), damit Spruenge knackig bleiben
+  airSteer: 0.3,        // Anteil der Lenkung in der Luft
+  wetGrip: 0.3,         // Anteil der Haftung in einer Pfuetze
+  wetDrag: 0.6,         // 1/s Tempoverlust in einer Pfuetze
 };
 
 // stats: Abweichungen von KART fuer diesen Fahrer (siehe avatars.js).
@@ -48,6 +52,7 @@ export function createKart(x, z, heading, stats) {
     hop: 0,          // kleiner Hopser beim Drift-Start (s)
     wallHit: 0,      // Staerke des letzten Bandenkontakts (m/s), fuer Ton
     s: 0, d: 0, trackIdx: -1,
+    y: 0, vy: 0, air: false, landed: 0, wet: false,
   };
 }
 
@@ -63,7 +68,7 @@ export function stepKart(k, inp, dt, P = k.P || KART) {
   let vf = k.vx * fx + k.vz * fz;
 
   // Drift beginnen: Taste gedrueckt, gelenkt, schnell genug.
-  if (!k.drift && inp.drift && Math.abs(inp.steer) > 0.3 && vf > P.driftMinSpeed) {
+  if (!k.drift && !k.air && inp.drift && Math.abs(inp.steer) > 0.3 && vf > P.driftMinSpeed) {
     k.drift = Math.sign(inp.steer);
     k.charge = 0;
     k.hop = 0.18;
@@ -92,6 +97,7 @@ export function stepKart(k, inp, dt, P = k.P || KART) {
     const high = 1 - P.steerHighLoss * Math.min(1, Math.max(0, vf) / P.maxSpeed);
     targetYaw = -inp.steer * P.steerRate * low * high * (vf < -0.5 ? -1 : 1);
   }
+  if (k.air) targetYaw *= P.airSteer;
   k.yawRate += (targetYaw - k.yawRate) * Math.min(1, dt * 10);
   k.heading += k.yawRate * dt;
 
@@ -104,20 +110,23 @@ export function stepKart(k, inp, dt, P = k.P || KART) {
   // Laengsrichtung
   if (k.boost > 0) k.boost = Math.max(0, k.boost - dt);
   const top = P.maxSpeed + (k.boost > 0 ? P.boostSpeed : 0);
-  if (inp.throttle > 0 && vf < top) vf = Math.min(top, vf + P.accel * inp.throttle * dt);
+  const ground = !k.air;   // in der Luft greifen weder Gas noch Bremse
+  if (ground && inp.throttle > 0 && vf < top) vf = Math.min(top, vf + P.accel * inp.throttle * dt);
   if (k.boost > 0 && vf < top) vf = Math.min(top, vf + P.boostAccel * dt);
-  if (inp.brake > 0) {
+  if (ground && inp.brake > 0) {
     if (vf > 0.3) vf = Math.max(0, vf - P.brake * inp.brake * dt);
     else if (vf > -P.reverseMax) vf -= P.accel * 0.6 * inp.brake * dt;
   }
-  if (!(inp.throttle > 0) && !(inp.brake > 0) && k.boost <= 0) {
+  if (ground && !(inp.throttle > 0) && !(inp.brake > 0) && k.boost <= 0) {
     vf -= Math.sign(vf) * Math.min(Math.abs(vf), P.roll * dt);
   }
   if (vf > top) vf = top + (vf - top) * Math.exp(-1.5 * dt);   // nach dem Schub sanft abbremsen
 
   // Querrichtung: Haftung baut Rutschen ab.
   const vs0 = vs;
-  vs *= Math.exp(-(k.drift ? P.driftGrip : P.grip) * dt);
+  if (k.wet && ground) vf *= Math.exp(-P.wetDrag * dt);
+  const grip = (k.drift ? P.driftGrip : P.grip) * (k.wet ? P.wetGrip : 1);
+  if (ground) vs *= Math.exp(-grip * dt);
   if (k.drift && vf > 0) vf = Math.min(top, vf + Math.abs(vs0 - vs) * P.driftKeep);
 
   k.vx = fx * vf + rx * vs;
@@ -152,6 +161,28 @@ export function collideWall(k, track, P = KART) {
     k.vx *= keep;
     k.vz *= keep;
     k.wallHit = vn;
+  }
+}
+
+// Hoehe: Das Kart folgt dem Boden. Faellt der Boden schneller ab, als das Kart mitkommt, hebt es ab.
+// ground = Bodenhoehe unter dem Kart (aus groundHeight), wet = in einer Pfuetze.
+export function stepVertical(k, ground, wet, dt, P = k.P || KART) {
+  k.landed = 0;
+  k.wet = wet && !k.air;
+  if (k.air) {
+    k.vy -= P.gravity * dt;
+    k.y += k.vy * dt;
+    if (k.y <= ground) { k.landed = -k.vy; k.y = ground; k.vy = 0; k.air = false; }
+    return;
+  }
+  const need = (ground - k.y) / dt;            // senkrechtes Tempo, um dem Boden zu folgen
+  if (k.vy > 2 && need < k.vy - P.gravity * dt) {
+    k.air = true;                              // Boden faellt weg: Sprung
+    k.vy -= P.gravity * dt;
+    k.y += k.vy * dt;
+  } else {
+    k.vy = need;
+    k.y = ground;
   }
 }
 
