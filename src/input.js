@@ -132,6 +132,8 @@ export function pollPads() {
       drift: btn(gp, 4) > 0.5 || btn(gp, 5) > 0.5,
       start: btn(gp, 9) > 0.5,
       back: btn(gp, 1) > 0.5,
+      a: btn(gp, 0) > 0.5,
+      vert: btn(gp, 12) > 0.5 ? -1 : btn(gp, 13) > 0.5 ? 1 : Math.abs(gp.axes[1] || 0) > 0.6 ? Math.sign(gp.axes[1]) : 0,
     };
     const old = pads[i];
     const dev = 'pad' + i;
@@ -141,6 +143,8 @@ export function pollPads() {
       if (st.steer > 0.6 && old.steer <= 0.6) events.push({ dev, action: 'right' });
       if (st.start && !old.start) events.push({ dev, action: 'start' });
       if (st.back && !old.back) events.push({ dev, action: 'back' });
+      if (st.a && !old.a) events.push({ dev, action: 'confirm' });
+      if (st.vert !== old.vert && st.vert !== 0) events.push({ dev, action: st.vert < 0 ? 'up' : 'down' });
     }
     pads[i] = st;
   }

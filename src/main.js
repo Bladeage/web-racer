@@ -21,24 +21,32 @@ const NO_INPUT = { throttle: 0, brake: 0, steer: 0, drift: false };
 // Testhilfe: ?autopilot in der Adresse laesst die KI auch die Spieler-Karts fahren.
 const AUTOPILOT = new URLSearchParams(location.search).has('autopilot');
 
-// Renderer und Szene. Wenig Licht, keine Schatten (Split-Screen zeichnet doppelt).
-const canvas = document.getElementById('spiel');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9fcbf0);
-scene.fog = new THREE.Fog(0x9fcbf0, 90, 260);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f5a, 1.6));
-const sun = new THREE.DirectionalLight(0xffffff, 1.7);
-sun.position.set(40, 80, 25);
-scene.add(sun);
-const cameras = [new THREE.PerspectiveCamera(60, 1, 0.1, 600), new THREE.PerspectiveCamera(60, 1, 0.1, 600)];
-
 // Einstellungen bleiben im Browser gespeichert, falls erlaubt.
-const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1, track: 0 };
+const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1, track: 0, quality: 'nice', fps: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('webracer.settings') || '{}')); } catch (e) { /* ohne Speicher */ }
 function saveSettings() {
   try { localStorage.setItem('webracer.settings', JSON.stringify(settings)); } catch (e) { /* ohne Speicher */ }
 }
+
+// Grafik-Stufe: "schnell" fuer schwache Rechner (keine Kantenglaettung, niedrige Aufloesung, kuerzere Sicht,
+// weniger Baeume, kein Rauch). "schoen" ist der bisherige Stand. Wechsel laedt die Seite neu (Kantenglaettung
+// laesst sich nur beim Start festlegen).
+const FAST = settings.quality === 'fast';
+const Q = FAST
+  ? { aa: false, ratio: 1, ratioSplit: 0.75, fogNear: 50, fogFar: 150, far: 170, ring: 1, smoke: false }
+  : { aa: true, ratio: 2, ratioSplit: 1.25, fogNear: 90, fogFar: 260, far: 600, ring: 2, smoke: true };
+
+// Renderer und Szene. Wenig Licht, keine Schatten (Split-Screen zeichnet doppelt).
+const canvas = document.getElementById('spiel');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: Q.aa, powerPreference: 'high-performance' });
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fcbf0);
+scene.fog = new THREE.Fog(0x9fcbf0, Q.fogNear, Q.fogFar);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f5a, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.7);
+sun.position.set(40, 80, 25);
+scene.add(sun);
+const cameras = [new THREE.PerspectiveCamera(60, 1, 0.1, Q.far), new THREE.PerspectiveCamera(60, 1, 0.1, Q.far)];
 
 const snd = createSound();
 snd.volume = settings.volume;
@@ -55,7 +63,7 @@ const isSplit = () => game !== null && game.humans.length === 2 && (mode === 'ra
 // Aufloesung: im Split-Screen niedriger, damit schwache Rechner fluessig bleiben.
 function applySize() {
   const split = isSplit();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, split ? 1.25 : (isTouchDevice() ? 1.5 : 2)));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, split ? Q.ratioSplit : (isTouchDevice() ? Math.min(1.5, Q.ratio) : Q.ratio)));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   const aspect = window.innerWidth / (window.innerHeight / (split ? 2 : 1));
   for (const c of cameras) { c.aspect = aspect; c.updateProjectionMatrix(); }
@@ -81,12 +89,15 @@ async function boot() {
   portraits = renderPortraits(models, AVATARS.map(a => a.model));
   if (settings.avatar >= AVATARS.length) settings.avatar = 0;
   ui.buildAvatarCards(AVATARS, portraits, settings.avatar, (i) => { settings.avatar = i; saveSettings(); });
-  ui.setMenuValues(settings.laps, settings.players, settings.volume);
+  ui.setMenuValues(settings.laps, settings.players, settings.volume, settings.quality, settings.fps);
+  ui.showFps(settings.fps);
   ui.buildTrackChoice(TRACKS.map(d => buildTrack(d)), settings.track, (i) => { settings.track = i; saveSettings(); loadTrack(i); });
   ui.bindMenu({
     onLaps: (n) => { settings.laps = n; saveSettings(); },
     onPlayers: (n) => { settings.players = n; saveSettings(); },
     onVolume: (v) => { settings.volume = v; setVolume(snd, v); saveSettings(); },
+    onQuality: (q) => { if (q !== settings.quality) { settings.quality = q; saveSettings(); location.reload(); } },
+    onFps: (on) => { settings.fps = on; saveSettings(); ui.showFps(on); },
     onStart: () => startFromMenu(),
     onRestart: () => restart(),
     onResume: () => resume(),
@@ -107,6 +118,10 @@ async function boot() {
   enterMenu();
   renderer.setAnimationLoop(frame);
   window.spielLaeuft = true;
+  // Offline spielbar: Service Worker speichert die Dateien (nur ueber http/https moeglich).
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* ohne Offline-Modus weiter */ });
+  }
 }
 
 // Strecke laden: Welt neu aufbauen, Fahrer im Menue in die Startaufstellung stellen.
@@ -117,7 +132,7 @@ function loadTrack(i) {
   }
   for (const v of menuViews) removeKartView(scene, v);
   track = buildTrack(TRACKS[i]);
-  world = buildWorld(scene, track, models);
+  world = buildWorld(scene, track, models, Q.ring);
   center.set(0, 0, 0);
   for (const t of track.tiles) center.add(new THREE.Vector3(t.x, 0, t.z));
   center.divideScalar(track.tiles.length);
@@ -140,6 +155,11 @@ function onKey(code) {
 // Menue-Steuerung mit Gamepad und Enter/Esc (Ereignisse aus input.js).
 function handleEvents(evs) {
   for (const ev of evs) {
+    const pad = ev.dev.startsWith('pad');
+    // Menues mit dem Gamepad: Steuerkreuz/Stick waehlt, A bestaetigt.
+    const nav = pad && (mode === 'menu' || mode === 'paused' || (mode === 'race' && game.resultShown));
+    if (nav && ['up', 'down', 'left', 'right'].includes(ev.action)) { ui.navMove(ev.action); continue; }
+    if (nav && ev.action === 'confirm') { ui.navActivate(); continue; }
     if (mode === 'menu') {
       if (ev.action === 'start') startFromMenu();
     } else if (mode === 'join') {
@@ -147,10 +167,10 @@ function handleEvents(evs) {
     } else if (mode === 'race') {
       if (game.resultShown) {
         if (ev.action === 'start') restart();
-        else if (ev.action === 'back' && ev.dev !== 'kbd') enterMenu();
-      } else if (ev.action === 'start' && ev.dev.startsWith('pad')) pause();
+        else if (ev.action === 'back' && pad) enterMenu();
+      } else if (ev.action === 'start' && pad) pause();
     } else if (mode === 'paused') {
-      if (ev.action === 'start' && ev.dev.startsWith('pad')) resume();
+      if ((ev.action === 'start' || ev.action === 'back') && pad) resume();
     }
   }
 }
@@ -336,7 +356,9 @@ const timer = new THREE.Timer();
 let wasRacing = false;
 function frame(now) {
   timer.update(now);
-  const dt = Math.min(timer.getDelta(), 0.1);
+  const rawDt = timer.getDelta();
+  const dt = Math.min(rawDt, 0.1);
+  ui.tickFps(rawDt);
   pollPads();
   handleEvents(takeEvents());
 
@@ -358,10 +380,10 @@ function frame(now) {
         g.resultRefresh = 0.5;
         ui.showResult(g.race, g.race.entries.slice(0, g.humans.length));
       }
-      updateSmoke(smoke, dt);
+      if (Q.smoke) updateSmoke(smoke, dt);
       animatePads(dt);
     }
-    g.karts.forEach((k, i) => updateKartView(g.views[i], k, mode === 'race' ? dt : 0, mode === 'race' ? smoke : null));
+    g.karts.forEach((k, i) => updateKartView(g.views[i], k, mode === 'race' ? dt : 0, mode === 'race' && Q.smoke ? smoke : null));
     g.humans.forEach((h, i) => {
       updateChaseCam(h.cc, g.karts[i], dt, track);
       ui.updateHud(i, g.race.entries[i], g.race, g.karts[i].speed);

@@ -13,7 +13,8 @@ function hash(a, b) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-export function buildWorld(scene, track, models) {
+// ring: wie viele Kachelreihen Wald um die Strecke (weniger = schneller).
+export function buildWorld(scene, track, models, ring = 2) {
   const world = new THREE.Group();
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(1200, 1200),
@@ -35,7 +36,7 @@ export function buildWorld(scene, track, models) {
 
   // Deko in freien Zellen: innen gemischt, aussen ein Waldring, neben dem Start Zelte.
   const start = track.tiles[0];
-  for (const c of freeCells(track, 2)) {
+  for (const c of freeCells(track, ring)) {
     const r = hash(c.gx, c.gz);
     const nearStart = Math.abs(c.gx - start.gx) + Math.abs(c.gz - start.gz) === 1;
     let name = 'decoration-forest';
