@@ -48,6 +48,7 @@ export function buildWorld(scene, track, models) {
     world.add(m);
   }
   world.add(buildPads(track));
+  world.add(buildFeatures(track, models));
   scene.add(world);
   return world;
 }
@@ -82,6 +83,45 @@ function buildPads(track) {
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(a.x, 0.03, a.z);
     group.add(mesh);
+  }
+  return group;
+}
+
+// Hindernisse: Bodenwellen und Rampen aus dem Kenney-Modell track-bump (skaliert), Pfuetzen als flache Flaeche.
+let puddleTex = null;
+function buildFeatures(track, models) {
+  const group = new THREE.Group();
+  for (const f of track.features) {
+    const a = pointAtXZ(track, f.s, f.d);
+    const yaw = Math.atan2(a.tx, a.tz);
+    if (f.type === 'puddle') {
+      if (!puddleTex) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const g = c.getContext('2d');
+        const grd = g.createRadialGradient(28, 26, 2, 32, 32, 32);
+        grd.addColorStop(0, 'rgba(220,240,255,1)');
+        grd.addColorStop(0.25, 'rgba(70,150,235,1)');
+        grd.addColorStop(0.85, 'rgba(30,95,190,0.95)');
+        grd.addColorStop(1, 'rgba(30,95,190,0)');
+        g.fillStyle = grd;
+        g.fillRect(0, 0, 64, 64);
+        puddleTex = new THREE.CanvasTexture(c);
+      }
+      const m = new THREE.Mesh(new THREE.CircleGeometry(0.5, 28), new THREE.MeshBasicMaterial({ map: puddleTex, transparent: true, depthWrite: false }));
+      m.rotation.order = 'YXZ';
+      m.rotation.y = yaw;
+      m.rotation.x = -Math.PI / 2;
+      m.scale.set(f.w, f.len, 1);
+      m.position.set(a.x, 0.025, a.z);
+      group.add(m);
+    } else {
+      const m = models['track-bump'].clone(true);
+      m.scale.set(f.sx, f.sy, f.sz);
+      m.rotation.y = yaw;
+      m.position.set(a.x, 0, a.z);
+      group.add(m);
+    }
   }
   return group;
 }
@@ -170,7 +210,7 @@ export function removeKartView(scene, v) {
 const SPARK = [null, new THREE.Color(0x4fb7ff), new THREE.Color(0xff8a1f)];
 
 export function updateKartView(v, k, dt, smoke) {
-  v.root.position.set(k.x, 0, k.z);
+  v.root.position.set(k.x, k.y || 0, k.z);
   v.root.rotation.y = k.heading;
   // Im Drift zeigt die Nase staerker in die Kurve.
   const yawTarget = -k.drift * 0.38 - k.slip * 0.015;
@@ -178,6 +218,9 @@ export function updateKartView(v, k, dt, smoke) {
   v.holder.rotation.y = v.visYaw;
   // Hopser beim Drift-Start
   v.holder.position.y = k.hop > 0 ? Math.sin((1 - k.hop / 0.18) * Math.PI) * 0.35 : 0;
+  // In der Luft neigt sich die Nase mit der Flugbahn.
+  const pitchT = k.air ? Math.max(-0.35, Math.min(0.35, -(k.vy || 0) * 0.03)) : 0;
+  v.holder.rotation.x += (pitchT - v.holder.rotation.x) * (1 - Math.exp(-dt * 8));
 
   // Raeder drehen und lenken
   const spin = k.speed / WHEEL_R * dt;
@@ -210,14 +253,15 @@ export function updateKartView(v, k, dt, smoke) {
   if (k.boost > 0) v.flame.scale.set(0.9 + Math.random() * 0.5, 0.7 + Math.random() * 0.4, 1);
 
   // Rauch beim Driften und Rutschen
-  if (smoke && (k.drift || Math.abs(k.slip) > 4 || k.boostStart)) {
+  const splash = k.wet && Math.abs(k.speed) > 4;
+  if (smoke && !k.air && (k.drift || Math.abs(k.slip) > 4 || k.boostStart || splash)) {
     v.smokeTimer -= dt;
     if (v.smokeTimer <= 0) {
       v.smokeTimer = 0.07;
       const c = Math.cos(k.heading), s = Math.sin(k.heading);
       for (const side of [-1, 1]) {
         const lx = side * 0.7 * KART_SCALE, lz = -0.8 * KART_SCALE;
-        emitSmoke(smoke, k.x + lx * c + lz * s, k.z - lx * s + lz * c);
+        emitSmoke(smoke, k.x + lx * c + lz * s, k.z - lx * s + lz * c, splash ? 0x9fd0ff : 0xdddddd);
       }
     }
   }
@@ -235,11 +279,12 @@ export function createSmoke(scene, tex) {
   return { parts, next: 0 };
 }
 
-function emitSmoke(smoke, x, z) {
+function emitSmoke(smoke, x, z, color = 0xdddddd) {
   const p = smoke.parts[smoke.next];
   smoke.next = (smoke.next + 1) % smoke.parts.length;
   p.life = 0.7;
   p.sp.position.set(x, 0.3, z);
+  p.sp.material.color.setHex(color);
   p.sp.visible = true;
 }
 

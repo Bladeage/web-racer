@@ -19,8 +19,9 @@ export function updateChaseCam(cc, k, dt, track) {
   const fx = Math.sin(cc.yaw), fz = Math.cos(cc.yaw);
   const sp = Math.max(0, k.speed);
   const dist = 6.5 + sp * 0.06;
-  tmp.set(k.x - fx * dist, 2.7 + sp * 0.02, k.z - fz * dist);
-  const look = new THREE.Vector3(k.x + fx * 4, 1.0, k.z + fz * 4);
+  const ky = (k.y || 0) * 0.7;   // bei Spruengen geht die Kamera teilweise mit
+  tmp.set(k.x - fx * dist, 2.7 + sp * 0.02 + ky, k.z - fz * dist);
+  const look = new THREE.Vector3(k.x + fx * 4, 1.0 + ky, k.z + fz * 4);
   if (!cc.ready) { cc.pos.copy(tmp); cc.look.copy(look); cc.ready = true; }
   cc.pos.lerp(tmp, 1 - Math.exp(-dt * 12));
   // Kamera bleibt innerhalb der Banden, sonst sieht man nach einem Abprall kurz von aussen auf die Strecke.

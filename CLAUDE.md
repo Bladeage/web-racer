@@ -26,8 +26,8 @@
 
 ## Stand (03.11.2026)
 
-- Fertig: Grundgerüst, Hauptmenü, Strecke "Waldring" aus Kenney-Kacheln (Maßstab 2), 4 Avatare (Kenney-Trucks), Fahrphysik, Drift mit Mini-Turbo, Verfolgerkamera, Ton, ein KI-Gegner (neutral), Countdown, Runden, Ergebnis. Touch-Steuerung für das Einzelspiel (03.11.2026). Countdown-Overlay mit Start-Turbo, 4 Boost-Felder, Gamepad (Standard-Belegung), Split-Screen mit Beitreten per Gas-Taste (03.11.2026). 3 Strecken mit Streckenwahl, Fahrer mit eigenen Werten, Minikarte, Abstand zum Gegner (03.11.2026).
+- Fertig: Grundgerüst, Hauptmenü, Strecke "Waldring" aus Kenney-Kacheln (Maßstab 2), 4 Avatare (Kenney-Trucks), Fahrphysik, Drift mit Mini-Turbo, Verfolgerkamera, Ton, ein KI-Gegner (neutral), Countdown, Runden, Ergebnis. Touch-Steuerung für das Einzelspiel (03.11.2026). Countdown-Overlay mit Start-Turbo, 4 Boost-Felder, Gamepad (Standard-Belegung), Split-Screen mit Beitreten per Gas-Taste (03.11.2026). 3 Strecken mit Streckenwahl, Fahrer mit eigenen Werten, Minikarte, Abstand zum Gegner (03.11.2026). Rampen und Bodenwellen (Kenney track-bump skaliert, Höhenprofil aus dem Modell), Pfützen als flache Fläche, Sprungphysik (03.11.2026).
 - Bewusst nicht jetzt (Nutzer, 03.11.2026): Items, weitere KI-Gegner (Strecke zu klein), Strecken aus Rattenperspektive erst mit Zugang zu einem freien Modell-Portal, keine selbst erzeugten Modelle.
 - Zielgruppe: schwache Rechner mit Chromium-Browser, ohne Spiele-Plattformen.
 - Strecken: `TRACKS` in `src/track.js` (Layout aus F, S, L, R; Boost-Felder je Kachel). Tests prüfen: geschlossen, ohne Überschneidung, KI fährt 3 Runden ohne harten Bandenkontakt.
-- Offen aus der Auswahl vom 03.11.2026: Bodenwellen, Rampen (Kenney-Bodenwelle skaliert), Pfützen (flache Markierung); Grafik-Stufe, Menü per Gamepad, offline spielbar.
+- Offen aus der Auswahl vom 03.11.2026: Grafik-Stufe, Menü per Gamepad, offline spielbar.

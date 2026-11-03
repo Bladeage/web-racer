@@ -13,6 +13,7 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 - Verfolgerkamera, Motor- und Reifenton
 - Ein KI-Gegner mit neutraler Fahrweise
 - Minikarte und Abstand zum Vorder- und Hintermann
+- Rampen, Bodenwellen und Pfützen
 - Split-Screen für 2 Spieler (oben/unten): Tastatur geteilt, zwei Gamepads oder gemischt
 - Gamepad (Xbox-Belegung, andere Gamepads über die Standard-Belegung des Browsers)
 - Touch-Steuerung für das Einzelspiel
@@ -34,6 +35,8 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 **Fahrer:** Flitz ist schnell, beschleunigt aber träge. Moos haftet gut. Pflaume lenkt am engsten. Sonne beschleunigt am stärksten. Die Werte sind geschätzt und ausbalanciert.
 
 **Boost-Felder:** Orange Felder mit Pfeilen geben kurz Schub. Zwei liegen auf langen Geraden, zwei kurz vor Kurven.
+
+**Hindernisse:** Jede Strecke hat eine Rampe (Sprung, in der Luft lenkt man kaum), zwei Bodenwellen (kleiner Hopser) und zwei Pfützen (bremsen und machen rutschig).
 
 **Touch (Handy, Tablet, Einzelspiel):** links ein Lenkfeld (je weiter zur Seite, desto stärker), rechts Gas, Bremse und Drift. Pause oben in der Mitte. Am besten im Querformat.
 
