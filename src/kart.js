@@ -28,6 +28,8 @@ export const KART = {
   boost2: 1.3,          // s Schub Stufe 2
   boostSpeed: 7,        // m/s mehr Hoechstgeschwindigkeit im Schub
   boostAccel: 22,       // m/s^2 zusaetzlich im Schub
+  padBoost: 0.9,        // s Schub durch ein Boost-Feld
+  startBoost: 1.2,      // s Schub beim Turbo-Start
 };
 
 export function createKart(x, z, heading) {
@@ -149,6 +151,18 @@ export function collideWall(k, track, P = KART) {
     k.vz *= keep;
     k.wallHit = vn;
   }
+}
+
+// Boost-Feld unter dem Kart? Dann Schub. Nutzt s und d aus collideWall.
+export function checkPads(k, track, P = KART) {
+  for (const p of track.pads) {
+    if (k.s >= p.s0 && k.s <= p.s1 && Math.abs(k.d - p.d) <= p.w / 2) {
+      if (k.boost < P.padBoost * 0.5) k.boostStart = true;
+      k.boost = Math.max(k.boost, P.padBoost);
+      return true;
+    }
+  }
+  return false;
 }
 
 // Zwei Karts als Kreise: auseinanderschieben, Geschwindigkeit entlang der Verbindung tauschen (gleiche Masse).

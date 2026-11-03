@@ -6,31 +6,37 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 
 ## Stand
 
-- Hauptmenü mit Fahrerwahl (4 Avatare), Rundenzahl und Lautstärke
-- Strecke "Waldring" aus Kenney-Kacheln, mit Banden und Wald
+- Hauptmenü mit Fahrerwahl (4 Avatare), Spielerzahl, Rundenzahl und Lautstärke
+- Strecke "Waldring" aus Kenney-Kacheln, mit Banden, Wald und 4 Boost-Feldern
 - Arcade-Fahrphysik, Drift mit Mini-Turbo (blaue und orange Funken)
+- Countdown mit Ampel und Start-Turbo
 - Verfolgerkamera, Motor- und Reifenton
-- Touch-Steuerung für das Einzelspiel
 - Ein KI-Gegner mit neutraler Fahrweise
-- Countdown, Runden, Rundenzeiten, Platzierung, Ergebnis
-
-Geplant: Split-Screen für 2 Spieler, weitere Strecken, Gamepad.
+- Split-Screen für 2 Spieler (oben/unten): Tastatur geteilt, zwei Gamepads oder gemischt
+- Gamepad (Xbox-Belegung, andere Gamepads über die Standard-Belegung des Browsers)
+- Touch-Steuerung für das Einzelspiel
 
 ## Steuerung
 
-| Aktion | Tasten |
-|---|---|
-| Gas | W oder Pfeil hoch |
-| Bremse, rückwärts | S oder Pfeil runter |
-| Lenken | A D oder Pfeile links/rechts |
-| Drift | Umschalt links, Strg rechts oder Leertaste |
-| Pause | Esc |
+| Aktion | Einzelspiel (Tastatur) | Spieler 1 (Split) | Spieler 2 (Split) | Gamepad |
+|---|---|---|---|---|
+| Gas | W oder Pfeil hoch | W | Pfeil hoch | RT oder A |
+| Bremse, rückwärts | S oder Pfeil runter | S | Pfeil runter | LT oder B |
+| Lenken | A D oder Pfeile | A D | Pfeile links/rechts | linker Stick oder Steuerkreuz |
+| Drift | Umschalt links, Strg rechts oder Leertaste | Umschalt links | Strg rechts | LB oder RB |
+| Pause | Esc | Esc | Esc | Start |
+
+**2 Spieler:** Im Menü "Spieler: 2" wählen und "Rennen starten". Jeder Spieler drückt auf seinem Gerät Gas (W, Pfeil hoch oder RT/A am Gamepad). Links/rechts wechselt den Fahrer. Danach startet Gas das Rennen.
+
+**Start-Turbo:** Gas genau während der "1" drücken und halten. Wer schon bei "3" oder "2" Gas gibt, startet zu früh und der Motor stockt kurz.
+
+**Boost-Felder:** Orange Felder mit Pfeilen geben kurz Schub. Zwei liegen auf langen Geraden, zwei kurz vor Kurven.
 
 **Touch (Handy, Tablet, Einzelspiel):** links ein Lenkfeld (je weiter zur Seite, desto stärker), rechts Gas, Bremse und Drift. Pause oben in der Mitte. Am besten im Querformat.
 
-Drift: Taste halten und in die Kurve lenken. Nach kurzer Zeit erscheinen blaue Funken, später orange. Loslassen gibt einen Mini-Turbo.
+**Drift:** Taste halten und in die Kurve lenken. Nach kurzer Zeit erscheinen blaue Funken, später orange. Loslassen gibt einen Mini-Turbo.
 
-Später im Split-Screen: Spieler 1 nur W A S D mit Umschalt links, Spieler 2 nur Pfeiltasten mit Strg rechts.
+Hinweis: Manche Tastaturen erkennen nicht beliebig viele gleichzeitig gedrückte Tasten. Wenn zwei Spieler an einer Tastatur Eingaben verlieren, hilft ein Gamepad.
 
 ## Lokal starten
 

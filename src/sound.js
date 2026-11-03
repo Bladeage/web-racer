@@ -84,7 +84,14 @@ export function stopRaceSound(snd) {
 }
 
 // Lautstaerke nach Abstand zum Hoerer (dem Spieler-Kart), Lage links/rechts nach Richtung.
+// me ist ein Kart oder eine Liste von Karts (Split-Screen). Mit zwei Hoerern: lautester Wert, keine Stereo-Lage.
 function placement(k, me) {
+  if (Array.isArray(me)) {
+    if (me.length === 1) return placement(k, me[0]);
+    let att = 0;
+    for (const m of me) att = Math.max(att, placement(k, m).att);
+    return { att, pan: 0 };
+  }
   if (k === me) return { att: 1, pan: 0 };
   const dx = k.x - me.x, dz = k.z - me.z;
   const dist = Math.hypot(dx, dz);

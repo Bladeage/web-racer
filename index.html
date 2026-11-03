@@ -28,6 +28,12 @@
       <div id="avatars" class="avatars"></div>
       <div class="row">
         <div>
+          <h2>Spieler</h2>
+          <div id="players" class="seg">
+            <button data-players="1" class="on">1</button><button data-players="2">2</button>
+          </div>
+        </div>
+        <div>
           <h2>Runden</h2>
           <div id="laps" class="seg">
             <button data-laps="1">1</button><button data-laps="3" class="on">3</button><button data-laps="5">5</button>
@@ -45,17 +51,27 @@
         <span><kbd>A</kbd><kbd>D</kbd>/<kbd>&larr;</kbd><kbd>&rarr;</kbd> Lenken</span>
         <span><kbd>Umschalt links</kbd>/<kbd>Leertaste</kbd> Drift</span>
         <span><kbd>Esc</kbd> Pause</span>
+        <span>Gamepad: <kbd>RT</kbd>/<kbd>A</kbd> Gas, <kbd>LT</kbd>/<kbd>B</kbd> Bremse, <kbd>LB</kbd>/<kbd>RB</kbd> Drift, Stick lenken, <kbd>Start</kbd> Pause</span>
       </div>
       <p class="hint touch-hint">Touch: links lenken, rechts Gas, Bremse und Drift. Am besten im Querformat.</p>
       <p class="hint">Drift: Taste halten und lenken. Blaue oder orange Funken? Loslassen gibt einen Mini-Turbo.</p>
     </div>
   </div>
 
-  <div id="hud" class="hud">
-    <div class="hud-tl"><div id="hudLap">Runde 1/3</div><div id="hudTime">0:00.00</div><div id="hudBest" class="dim"></div></div>
-    <div class="hud-tr"><span id="hudPos">1.</span><span class="dim" id="hudOf">/2</span></div>
-    <div class="hud-br"><span id="hudSpeed">0</span> <span class="dim">km/h</span></div>
+  <div id="join" class="screen">
+    <div class="panel join">
+      <h2>2 Spieler: Ger&auml;te w&auml;hlen</h2>
+      <div class="jslots">
+        <div id="join0" class="jslot"><b>Spieler 1</b><img alt=""><div class="jname"></div><div class="jdev dim"></div><small class="jhint"></small></div>
+        <div id="join1" class="jslot"><b>Spieler 2</b><img alt=""><div class="jname"></div><div class="jdev dim"></div><small class="jhint"></small></div>
+      </div>
+      <p id="joinStatus" class="hint"></p>
+      <button id="joinGo" class="big" disabled>Los!</button>
+      <button id="joinBack">Zur&uuml;ck</button>
+    </div>
   </div>
+
+  <div id="huds" class="huds"></div>
   <div id="touch" class="touch">
     <div id="steerPad" class="steer"><span>&#9664;</span><span>&#9654;</span><i id="steerKnob"></i></div>
     <div class="pedals">
@@ -65,8 +81,6 @@
     </div>
     <button id="tPause" class="tpause" aria-label="Pause">II</button>
   </div>
-  <div id="countdown" class="center-big"></div>
-  <div id="banner" class="banner"></div>
 
   <div id="pause" class="screen">
     <div class="panel small">
