@@ -26,6 +26,6 @@
 
 ## Stand (02.11.2026)
 
-- Fertig: Grundgerüst, Hauptmenü, Strecke "Waldring" aus Kenney-Kacheln (Maßstab 2), 4 Avatare (Kenney-Trucks), Fahrphysik, Drift mit Mini-Turbo, Verfolgerkamera, Ton, ein KI-Gegner (neutral), Countdown, Runden, Ergebnis.
+- Fertig: Grundgerüst, Hauptmenü, Strecke "Waldring" aus Kenney-Kacheln (Maßstab 2), 4 Avatare (Kenney-Trucks), Fahrphysik, Drift mit Mini-Turbo, Verfolgerkamera, Ton, ein KI-Gegner (neutral), Countdown, Runden, Ergebnis. Touch-Steuerung für das Einzelspiel (03.11.2026).
 - Offen laut Übergabe: Split-Screen für Spieler 2, danach weitere Strecken, Items, Gamepad.
 - Strecke ändern: `TRACK_1.layout` in `src/track.js` (F, S, L, R). Ein Test prüft, dass sie geschlossen ist.
