@@ -1,0 +1,17 @@
+Modelle, Textur, Toene und Rauch-Sprite in diesem Ordner stammen aus
+
+  Kenney, "Starter Kit Racing"
+  https://github.com/KenneyNL/Starter-Kit-Racing
+  https://kenney.nl
+
+Laut README des Pakets sind die 3D-Modelle und Toene CC0-lizenziert
+(Creative Commons Zero, gemeinfrei): https://creativecommons.org/publicdomain/zero/1.0/
+Der Programmcode des Pakets steht unter MIT (Copyright (c) 2023 Kenney); er wird hier nicht verwendet.
+
+Uebernommene Dateien (unveraendert):
+  models/track-straight.glb, track-corner.glb, track-finish.glb
+  models/decoration-forest.glb, decoration-tents.glb, decoration-empty.glb
+  models/vehicle-truck-red.glb, vehicle-truck-green.glb, vehicle-truck-purple.glb, vehicle-truck-yellow.glb
+  models/Textures/colormap.png
+  audio/engine.ogg, skid.ogg, impact.ogg
+  sprites/smoke.png
