@@ -51,6 +51,11 @@
           <h2>Lautst&auml;rke</h2>
           <input id="volume" type="range" min="0" max="100" value="70">
         </div>
+        <div>
+          <h2>Grafik</h2>
+          <div id="quality" class="seg"><button data-q="fast">Schnell</button><button data-q="nice">Sch&ouml;n</button></div>
+          <label class="chk"><input id="fpsToggle" type="checkbox"> Bilder/s</label>
+        </div>
       </div>
       <button id="start" class="big">Rennen starten</button>
       <div class="keys">
@@ -80,6 +85,7 @@
   </div>
 
   <div id="huds" class="huds"></div>
+  <div id="fps" class="fps"></div>
   <div id="touch" class="touch">
     <div id="steerPad" class="steer"><span>&#9664;</span><span>&#9654;</span><i id="steerKnob"></i></div>
     <div class="pedals">

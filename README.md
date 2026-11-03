@@ -17,6 +17,9 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 - Split-Screen für 2 Spieler (oben/unten): Tastatur geteilt, zwei Gamepads oder gemischt
 - Gamepad (Xbox-Belegung, andere Gamepads über die Standard-Belegung des Browsers)
 - Touch-Steuerung für das Einzelspiel
+- Grafik-Stufe Schnell/Schön und Anzeige der Bilder pro Sekunde
+- Menü komplett per Gamepad bedienbar
+- Offline spielbar nach dem ersten Laden
 
 ## Steuerung
 
@@ -41,6 +44,12 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 **Touch (Handy, Tablet, Einzelspiel):** links ein Lenkfeld (je weiter zur Seite, desto stärker), rechts Gas, Bremse und Drift. Pause oben in der Mitte. Am besten im Querformat.
 
 **Drift:** Taste halten und in die Kurve lenken. Nach kurzer Zeit erscheinen blaue Funken, später orange. Loslassen gibt einen Mini-Turbo.
+
+**Menü per Gamepad:** Steuerkreuz oder Stick wählt, A bestätigt, B geht zurück. Start startet das Rennen oder pausiert.
+
+**Grafik:** "Schnell" für schwache Rechner (keine Kantenglättung, niedrigere Auflösung, weniger Bäume, kürzere Sicht, kein Rauch). Der Wechsel lädt die Seite neu. "Bilder/s" zeigt die Bildrate unten in der Mitte.
+
+**Offline:** Nach dem ersten Laden speichert der Browser alle Dateien. Danach startet das Spiel auch ohne Internet.
 
 Hinweis: Manche Tastaturen erkennen nicht beliebig viele gleichzeitig gedrückte Tasten. Wenn zwei Spieler an einer Tastatur Eingaben verlieren, hilft ein Gamepad.
 

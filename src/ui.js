@@ -47,6 +47,8 @@ function bindSeg(id, attr, cb) {
 export function bindMenu(h) {
   bindSeg('laps', 'laps', h.onLaps);
   bindSeg('players', 'players', h.onPlayers);
+  $('quality').addEventListener('click', (e) => { const q = e.target.dataset && e.target.dataset.q; if (q) h.onQuality(q); });
+  $('fpsToggle').addEventListener('change', (e) => h.onFps(e.target.checked));
   $('volume').addEventListener('input', (e) => h.onVolume(e.target.value / 100));
   $('start').addEventListener('click', h.onStart);
   $('resume').addEventListener('click', h.onResume);
@@ -103,10 +105,12 @@ function drawTrackShape(canvas, track, line) {
   return { sc, ox, oz };
 }
 
-export function setMenuValues(laps, players, volume, trackName) {
+export function setMenuValues(laps, players, volume, quality, fps) {
   $('laps').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.laps) === laps));
   $('players').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.players) === players));
   $('volume').value = Math.round(volume * 100);
+  $('quality').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.q === quality));
+  $('fpsToggle').checked = !!fps;
 }
 
 // ---------- Beitreten (2 Spieler) ----------
@@ -293,4 +297,74 @@ export function updateGap(i, ahead, behind) {
   if (behind !== null) parts.push('<span class="down">\u25bc ' + fmtGap(behind) + '</span>');
   const key = parts.join(' ');
   if (key !== h.gapKey) { h.gapKey = key; h.gap.innerHTML = key; }
+}
+
+// ---------- Bildrate ----------
+
+let fpsOn = false, fpsAcc = 0, fpsN = 0;
+export function showFps(on) {
+  fpsOn = on;
+  $('fps').classList.toggle('show', on);
+}
+export function tickFps(dt) {
+  if (!fpsOn) return;
+  fpsAcc += dt; fpsN++;
+  if (fpsAcc >= 0.5) { $('fps').textContent = Math.round(fpsN / fpsAcc) + ' Bilder/s'; fpsAcc = 0; fpsN = 0; }
+}
+
+// ---------- Menue per Gamepad ----------
+// Bewegt eine Auswahl ueber die sichtbaren Knoepfe des aktuellen Bildschirms (raeumlich: naechster Knopf in der Richtung).
+// A klickt, links/rechts auf dem Lautstaerke-Regler aendert den Wert.
+
+function navItems() {
+  const scr = document.querySelector('.screen.show');
+  if (!scr) return [];
+  return [...scr.querySelectorAll('button, input')].filter(el => !el.disabled && el.offsetParent !== null);
+}
+
+function current(items) {
+  const a = document.activeElement;
+  return items.includes(a) ? a : null;
+}
+
+export function navFocus(el) {
+  document.querySelectorAll('.padfocus').forEach(x => x.classList.remove('padfocus'));
+  if (!el) return;
+  el.focus({ preventScroll: false });
+  el.classList.add('padfocus');
+}
+
+export function navMove(dir) {
+  const items = navItems();
+  if (!items.length) return;
+  const cur = current(items);
+  if (!cur) { navFocus(items.find(el => el.classList.contains('big')) || items[0]); return; }
+  if (cur.type === 'range' && (dir === 'left' || dir === 'right')) {
+    cur.value = Number(cur.value) + (dir === 'left' ? -5 : 5);
+    cur.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  const r = cur.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const v = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[dir];
+  let best = null, bestScore = Infinity;
+  for (const el of items) {
+    if (el === cur) continue;
+    const q = el.getBoundingClientRect();
+    const dx = q.left + q.width / 2 - cx, dy = q.top + q.height / 2 - cy;
+    const along = dx * v[0] + dy * v[1];
+    if (along <= 4) continue;
+    const across = Math.abs(dx * v[1] - dy * v[0]);
+    const score = along + across * 2.5;
+    if (score < bestScore) { bestScore = score; best = el; }
+  }
+  if (best) navFocus(best);
+}
+
+export function navActivate() {
+  const items = navItems();
+  const cur = current(items);
+  if (!cur) { navMove('down'); return; }
+  if (cur.type === 'checkbox') { cur.checked = !cur.checked; cur.dispatchEvent(new Event('change', { bubbles: true })); return; }
+  if (cur.type !== 'range') cur.click();
 }
