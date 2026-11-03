@@ -10,6 +10,7 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 - Strecke "Waldring" aus Kenney-Kacheln, mit Banden und Wald
 - Arcade-Fahrphysik, Drift mit Mini-Turbo (blaue und orange Funken)
 - Verfolgerkamera, Motor- und Reifenton
+- Touch-Steuerung für das Einzelspiel
 - Ein KI-Gegner mit neutraler Fahrweise
 - Countdown, Runden, Rundenzeiten, Platzierung, Ergebnis
 
@@ -24,6 +25,8 @@ Geplant: Split-Screen für 2 Spieler, weitere Strecken, Gamepad.
 | Lenken | A D oder Pfeile links/rechts |
 | Drift | Umschalt links, Strg rechts oder Leertaste |
 | Pause | Esc |
+
+**Touch (Handy, Tablet, Einzelspiel):** links ein Lenkfeld (je weiter zur Seite, desto stärker), rechts Gas, Bremse und Drift. Pause oben in der Mitte. Am besten im Querformat.
 
 Drift: Taste halten und in die Kurve lenken. Nach kurzer Zeit erscheinen blaue Funken, später orange. Loslassen gibt einen Mini-Turbo.
 
