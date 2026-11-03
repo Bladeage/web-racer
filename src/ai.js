@@ -47,7 +47,8 @@ export function aiInput(ai, kart, track) {
   const vt = targetSpeed(ai, track, kart.s);
   return {
     throttle: v < vt ? 1 : 0,
-    brake: v > vt + 1.5 ? 1 : 0,
+    // Im Schub auf der Geraden nicht bremsen, nur wenn eine Kurve die Geschwindigkeit begrenzt.
+    brake: v > vt + 1.5 && vt < KART.maxSpeed * ai.speedFactor - 0.1 ? 1 : 0,
     steer,
     drift: false,
   };

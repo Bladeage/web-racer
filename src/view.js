@@ -1,6 +1,6 @@
 // Darstellung: Welt aus Kenney-Kacheln, Karts mit Raedern, Neigung, Drift-Funken, Rauch und Schub-Flamme.
 import * as THREE from 'three';
-import { TILE_SCALE, freeCells } from './track.js';
+import { TILE_SCALE, freeCells, pointAt as pointAtXZ } from './track.js';
 import { chargeLevel } from './kart.js';
 
 export const KART_SCALE = 1.25;     // Kenney-Truck ist etwa 2,8 m lang; skaliert etwa 3,5 m
@@ -17,10 +17,11 @@ export function buildWorld(scene, track, models) {
   const world = new THREE.Group();
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(1200, 1200),
-    new THREE.MeshLambertMaterial({ color: 0x5fb36a })
+    // Polygon-Offset und 25 cm Abstand: Sonst ueberdeckt der Boden bei breitem Bild (Split-Screen) den Asphalt.
+    new THREE.MeshLambertMaterial({ color: 0x5fb36a, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 4 })
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.03;
+  ground.position.y = -0.25;
   world.add(ground);
 
   const byType = { S: 'track-straight', L: 'track-corner', R: 'track-corner', F: 'track-finish' };
@@ -46,8 +47,48 @@ export function buildWorld(scene, track, models) {
     m.rotation.y = Math.floor(hash(c.gz, c.gx) * 4) * Math.PI / 2;
     world.add(m);
   }
+  world.add(buildPads(track));
   scene.add(world);
   return world;
+}
+
+// Boost-Felder: flache Flaeche mit Pfeilen (Canvas-Textur), die Pfeile laufen in Fahrtrichtung.
+export const padTextures = [];
+function buildPads(track) {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ff8a1f';
+  g.fillRect(0, 0, 64, 128);
+  g.fillStyle = '#ffe14d';
+  for (const y of [8, 72]) {
+    g.beginPath();
+    g.moveTo(6, y + 40); g.lineTo(32, y + 8); g.lineTo(58, y + 40); g.lineTo(58, y + 54); g.lineTo(32, y + 22); g.lineTo(6, y + 54);
+    g.closePath();
+    g.fill();
+  }
+  const group = new THREE.Group();
+  for (const p of track.pads) {
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1, (p.s1 - p.s0) / 4);
+    padTextures.push(tex);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(p.w, p.s1 - p.s0),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.92 }));
+    const mid = (p.s0 + p.s1) / 2;
+    const a = pointAtXZ(track, mid, p.d);
+    mesh.rotation.order = 'YXZ';
+    mesh.rotation.y = Math.atan2(a.tx, a.tz) + Math.PI;   // Pfeilspitze in Fahrtrichtung
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(a.x, 0.03, a.z);
+    group.add(mesh);
+  }
+  return group;
+}
+
+// Pfeile auf den Boost-Feldern laufen lassen.
+export function animatePads(dt) {
+  for (const t of padTextures) t.offset.y -= dt * 1.5;
 }
 
 // Runde, weiche Textur fuer Funken und Flamme (per Canvas erzeugt, keine Datei noetig).

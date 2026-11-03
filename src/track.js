@@ -12,7 +12,18 @@ export const HALF_WIDTH = 4.2 * TILE_SCALE;
 export const DIR_VEC = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 // Strecke 1: F = Start/Ziel, S = gerade, L/R = Kurve links/rechts. Start in Richtung West.
-export const TRACK_1 = { name: 'Waldring', layout: 'FSRSSSRSSRLSRSSRSS', startDir: 3 };
+// pads: Boost-Felder auf geraden Kacheln. tile = Kachel-Index, at = Lage in der Kachel (0..1),
+// d = seitlicher Versatz (rechts positiv), len/w = Laenge und Breite in m.
+// Mischung: zwei Felder auf langen Geraden (einfach mitnehmen), zwei kurz vor Kurven (Schub in die Kurve, braucht Koennen).
+export const TRACK_1 = {
+  name: 'Waldring', layout: 'FSRSSSRSSRLSRSSRSS', startDir: 3,
+  pads: [
+    { tile: 3, at: 0.2, d: 0, len: 6, w: 5 },      // Anfang der langen Gegengeraden, mittig
+    { tile: 16, at: 0.3, d: -4, len: 6, w: 4.5 },  // Start-Zielgerade, links: man muss die Linie waehlen
+    { tile: 8, at: 0.6, d: -3.5, len: 6, w: 4.5 }, // vor der Schikane, aussen: mit Schub in die Rechts-Links-Kombination
+    { tile: 14, at: 0.6, d: -3.5, len: 6, w: 4.5 },// vor der letzten Rechtskurve, aussen
+  ],
+};
 
 const STEP = 0.5; // Abstand der Mittellinien-Punkte in m
 
@@ -26,7 +37,7 @@ export function buildTrack(def) {
     const inDir = dir;
     if (c === 'L') dir = (dir + 3) % 4;
     else if (c === 'R') dir = (dir + 1) % 4;
-    tiles.push({ type: c, gx, gz, x: cx, z: cz, inDir, outDir: dir, rot: tileRotation(c, inDir, dir) });
+    tiles.push({ type: c, gx, gz, x: cx, z: cz, inDir, outDir: dir, rot: tileRotation(c, inDir, dir), i0: pts.length });
     tileCenterline(pts, cx, cz, inDir, dir);
     gx += DIR_VEC[dir][0];
     gz += DIR_VEC[dir][1];
@@ -50,11 +61,19 @@ export function buildTrack(def) {
     curv[k] = Math.abs(wrapAngle(h2 - h1)) / STEP;
   }
 
+  for (const t of tiles) t.s0 = cum[t.i0];
+  const pads = (def.pads || []).map((p) => {
+    const t = tiles[p.tile];
+    if (!t || (t.type !== 'S' && t.type !== 'F')) throw new Error('Boost-Feld nur auf geraden Kacheln');
+    const s0 = t.s0 + p.at * TILE;
+    return { s0, s1: s0 + p.len, d: p.d, w: p.w };
+  });
+
   // Ziellinie: Mitte der Startkachel. Die Mittellinie beginnt an deren Eingangskante.
   const lineS = TILE / 2;
   const sd = DIR_VEC[def.startDir];
   return {
-    name: def.name, tiles, pts, cum, curv, length, halfWidth: HALF_WIDTH, lineS,
+    name: def.name, tiles, pts, cum, curv, length, halfWidth: HALF_WIDTH, lineS, pads,
     start: { x: tiles[0].x, z: tiles[0].z, heading: Math.atan2(sd[0], sd[1]) },
   };
 }

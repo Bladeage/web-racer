@@ -1,6 +1,7 @@
 // Verfolgerkamera: haengt hinter dem Kart, folgt weich, Blickfeld waechst mit dem Tempo.
 import * as THREE from 'three';
 import { KART } from './kart.js';
+import { project } from './track.js';
 
 export function createChaseCam(camera) {
   return { camera, yaw: 0, pos: new THREE.Vector3(), look: new THREE.Vector3(), fov: 70, ready: false };
@@ -8,7 +9,7 @@ export function createChaseCam(camera) {
 
 const tmp = new THREE.Vector3();
 
-export function updateChaseCam(cc, k, dt) {
+export function updateChaseCam(cc, k, dt, track) {
   // Im Drift schaut die Kamera etwas in die Kurve, sonst folgt sie der Ausrichtung.
   const target = k.heading - k.drift * 0.25;
   if (!cc.ready) cc.yaw = target;
@@ -22,6 +23,17 @@ export function updateChaseCam(cc, k, dt) {
   const look = new THREE.Vector3(k.x + fx * 4, 1.0, k.z + fz * 4);
   if (!cc.ready) { cc.pos.copy(tmp); cc.look.copy(look); cc.ready = true; }
   cc.pos.lerp(tmp, 1 - Math.exp(-dt * 12));
+  // Kamera bleibt innerhalb der Banden, sonst sieht man nach einem Abprall kurz von aussen auf die Strecke.
+  if (track) {
+    const pr = project(track, cc.pos.x, cc.pos.z, cc.trackIdx ?? -1);
+    cc.trackIdx = pr.idx;
+    const lim = track.halfWidth - 0.6;
+    if (Math.abs(pr.d) > lim) {
+      const over = Math.abs(pr.d) - lim, sg = Math.sign(pr.d);
+      cc.pos.x -= -pr.tz * sg * over;
+      cc.pos.z -= pr.tx * sg * over;
+    }
+  }
   cc.look.lerp(look, 1 - Math.exp(-dt * 16));
   cc.camera.position.copy(cc.pos);
   cc.camera.lookAt(cc.look);

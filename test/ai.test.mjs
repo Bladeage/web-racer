@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildTrack, TRACK_1, pointAt } from '../src/track.js';
-import { createKart, stepKart, collideWall } from '../src/kart.js';
+import { createKart, stepKart, collideWall, checkPads } from '../src/kart.js';
 import { createAi, aiInput } from '../src/ai.js';
 import { createRace, stepRace } from '../src/race.js';
 
@@ -20,6 +20,7 @@ test('KI faehrt 3 Runden ohne harte Bandenkontakte', () => {
     const inp = race.phase === 'countdown' ? { throttle: 0, brake: 0, steer: 0, drift: false } : aiInput(ai, k, track);
     stepKart(k, inp, DT);
     collideWall(k, track);
+    checkPads(k, track);
     if (k.wallHit > 2) hard++;
     maxD = Math.max(maxD, Math.abs(k.d));
   }
