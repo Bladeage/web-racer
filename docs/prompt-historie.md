@@ -14,3 +14,5 @@ Antworten auf Rückfragen stehen als eigene Einträge, weil sie Entscheidungen e
 | 7 | 02.11.2026 | Weiter, autark: Hauptmenü, erste Map, erstes Modell, erste Avatare, Fahrphysik, Fahrsound, Drift, Kamera, ein KI-Gegner (neutrale Fahrweise). | Spielbare Version mit Menü, Strecke, KI |
 | 8 | 03.11.2026 | PRs ab sofort automatisch mergen. | Regel in CLAUDE.md, Merge PR #2 |
 | 9 | 03.11.2026 | Touch-Steuerung für das Einzelspiel nachliefern. | Touch-Steuerung |
+| 10 | 03.11.2026 | Fühlt sich super an. Weiterentwicklung? Strecken aus Rattenperspektive mit Nostalgie. Tokensparende Mechaniken vorschlagen. | Vorschläge (Strecken, Mechaniken) |
+| 11 | 03.11.2026 | Rattenperspektive erst mit Zugang zu freiem Modell-Portal, keine selbst erzeugten Modelle. Umsetzen: Start-Turbo mit Countdown-Overlay (zeigt Erfolg), Boost-Felder (Mischung Gerade und vor Kurven), Gamepad (XInput), Split-Screen (Tastatur geteilt, 2 Gamepads, gemischt; Beitreten per Gas-Taste). Keine Items, keine weiteren KI-Gegner. Ziel: schwache Rechner, Chromium. | Start-Turbo, Boost-Felder, Gamepad, Split-Screen |
