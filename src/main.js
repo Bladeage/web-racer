@@ -1,15 +1,16 @@
-// Einstieg: Laden, Hauptmenue, Rennen mit Spieler und einem KI-Gegner, Spielschleife.
+// Einstieg: Laden, Hauptmenue, Beitreten (2 Spieler), Rennen, Spielschleife.
 // Physik laeuft mit fester Schrittweite (1/120 s), Darstellung so oft der Browser zeichnet.
+// Split-Screen: ein Renderer, zwei Kameras, obere und untere Bildhaelfte (setViewport, setScissor).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { buildTrack, TRACK_1, pointAt } from './track.js';
-import { createKart, stepKart, collideWall, collideKarts } from './kart.js';
+import { createKart, stepKart, collideWall, collideKarts, checkPads } from './kart.js';
 import { createAi, aiInput } from './ai.js';
-import { createRace, stepRace, canDrive } from './race.js';
+import { createRace, stepRace, canDrive, noteStartInput, START_WINDOW } from './race.js';
 import { AVATARS } from './avatars.js';
-import { initInput, readSolo, initTouch, resetTouch, isTouchDevice } from './input.js';
+import { initInput, readSolo, readDevice, deviceName, pollPads, takeEvents, initTouch, resetTouch, isTouchDevice } from './input.js';
 import { createChaseCam, updateChaseCam } from './camera.js';
-import { buildWorld, createKartView, updateKartView, removeKartView, createSmoke, updateSmoke, clearSmoke, renderPortraits } from './view.js';
+import { buildWorld, createKartView, updateKartView, removeKartView, createSmoke, updateSmoke, clearSmoke, renderPortraits, animatePads } from './view.js';
 import { createSound, initSound, setVolume, startRaceSound, stopRaceSound, updateRaceSound, playImpact, playBoost, playBeep } from './sound.js';
 import * as ui from './ui.js';
 
@@ -17,14 +18,12 @@ const DT = 1 / 120;
 const MODELS = ['track-straight', 'track-corner', 'track-finish', 'decoration-forest', 'decoration-tents', 'decoration-empty',
   ...AVATARS.map(a => a.model)];
 const NO_INPUT = { throttle: 0, brake: 0, steer: 0, drift: false };
-// Testhilfe: ?autopilot in der Adresse laesst die KI auch das Spieler-Kart fahren.
+// Testhilfe: ?autopilot in der Adresse laesst die KI auch die Spieler-Karts fahren.
 const AUTOPILOT = new URLSearchParams(location.search).has('autopilot');
 
-// Renderer und Szene. Wenig Licht, keine Schatten (Split-Screen zeichnet spaeter doppelt).
+// Renderer und Szene. Wenig Licht, keine Schatten (Split-Screen zeichnet doppelt).
 const canvas = document.getElementById('spiel');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-// Auf Touch-Geraeten (meist Handys) etwas niedrigere Aufloesung, damit es fluessig bleibt.
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouchDevice() ? 1.5 : 2));
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fcbf0);
 scene.fog = new THREE.Fog(0x9fcbf0, 90, 260);
@@ -32,18 +31,10 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x6b8f5a, 1.6));
 const sun = new THREE.DirectionalLight(0xffffff, 1.7);
 sun.position.set(40, 80, 25);
 scene.add(sun);
-const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 600);
-
-function resize() {
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-}
-window.addEventListener('resize', resize);
-resize();
+const cameras = [new THREE.PerspectiveCamera(60, 1, 0.1, 600), new THREE.PerspectiveCamera(60, 1, 0.1, 600)];
 
 // Einstellungen bleiben im Browser gespeichert, falls erlaubt.
-const settings = { avatar: 0, laps: 3, volume: 0.7 };
+const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('webracer.settings') || '{}')); } catch (e) { /* ohne Speicher */ }
 function saveSettings() {
   try { localStorage.setItem('webracer.settings', JSON.stringify(settings)); } catch (e) { /* ohne Speicher */ }
@@ -51,12 +42,26 @@ function saveSettings() {
 
 const snd = createSound();
 snd.volume = settings.volume;
-let track, models, smoke;
+let track, models, smoke, portraits;
 let menuViews = [];
-let mode = 'loading';            // menu, race, paused
+let mode = 'loading';            // menu, join, race, paused
 let game = null;
+let join = null;                 // { slots: [ {dev, avatar} | null, ... ] }
 let orbit = 0;
 const center = new THREE.Vector3();
+
+const isSplit = () => game !== null && game.humans.length === 2 && (mode === 'race' || mode === 'paused');
+
+// Aufloesung: im Split-Screen niedriger, damit schwache Rechner fluessig bleiben.
+function applySize() {
+  const split = isSplit();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, split ? 1.25 : (isTouchDevice() ? 1.5 : 2)));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  const aspect = window.innerWidth / (window.innerHeight / (split ? 2 : 1));
+  for (const c of cameras) { c.aspect = aspect; c.updateProjectionMatrix(); }
+}
+window.addEventListener('resize', applySize);
+applySize();
 
 // Startplaetze hinter der Ziellinie, versetzt links und rechts.
 function gridSlot(i) {
@@ -79,22 +84,23 @@ async function boot() {
   menuViews = AVATARS.map((a, i) => {
     const v = createKartView(scene, models[a.model]);
     const g = gridSlot(i);
-    const k = createKart(g.x, g.z, g.heading);
-    updateKartView(v, k, 0, null);
+    updateKartView(v, createKart(g.x, g.z, g.heading), 0, null);
     return v;
   });
 
-  const portraits = renderPortraits(models, AVATARS.map(a => a.model));
+  portraits = renderPortraits(models, AVATARS.map(a => a.model));
   if (settings.avatar >= AVATARS.length) settings.avatar = 0;
   ui.buildAvatarCards(AVATARS, portraits, settings.avatar, (i) => { settings.avatar = i; saveSettings(); });
-  ui.setMenuValues(settings.laps, settings.volume, track.name);
+  ui.setMenuValues(settings.laps, settings.players, settings.volume, track.name);
   ui.bindMenu({
     onLaps: (n) => { settings.laps = n; saveSettings(); },
+    onPlayers: (n) => { settings.players = n; saveSettings(); },
     onVolume: (v) => { settings.volume = v; setVolume(snd, v); saveSettings(); },
-    onStart: () => startRace(),
-    onRestart: () => startRace(),
+    onStart: () => startFromMenu(),
+    onRestart: () => restart(),
     onResume: () => resume(),
     onMenu: () => enterMenu(),
+    onJoinGo: () => { if (join && join.slots.every(Boolean)) beginRace(join.slots); },
   });
   initInput(onKey);
   initTouch({
@@ -119,6 +125,24 @@ function onKey(code) {
   }
 }
 
+// Menue-Steuerung mit Gamepad und Enter/Esc (Ereignisse aus input.js).
+function handleEvents(evs) {
+  for (const ev of evs) {
+    if (mode === 'menu') {
+      if (ev.action === 'start') startFromMenu();
+    } else if (mode === 'join') {
+      handleJoin(ev);
+    } else if (mode === 'race') {
+      if (game.resultShown) {
+        if (ev.action === 'start') restart();
+        else if (ev.action === 'back' && ev.dev !== 'kbd') enterMenu();
+      } else if (ev.action === 'start' && ev.dev.startsWith('pad')) pause();
+    } else if (mode === 'paused') {
+      if (ev.action === 'start' && ev.dev.startsWith('pad')) resume();
+    }
+  }
+}
+
 function clearGame() {
   if (!game) return;
   for (const v of game.views) removeKartView(scene, v);
@@ -129,41 +153,102 @@ function clearGame() {
 
 function enterMenu() {
   clearGame();
+  join = null;
   mode = 'menu';
   for (const v of menuViews) v.root.visible = true;
-  camera.fov = 50;
-  camera.updateProjectionMatrix();
-  ui.showHud(false);
+  cameras[0].fov = 50;
+  applySize();
+  ui.showHuds(false);
   ui.showScreen('menu');
 }
 
-async function startRace() {
-  clearGame();
-  try { await initSound(snd, 'assets/audio/'); } catch (e) { /* Spiel laeuft auch ohne Ton */ }
-  for (const v of menuViews) v.root.visible = false;
+function startFromMenu() {
+  // Ton hier starten: Browser erlauben Ton erst nach einer Nutzeraktion (Klick oder Taste).
+  initSound(snd, 'assets/audio/').catch(() => { /* Spiel laeuft auch ohne Ton */ });
+  if (settings.players === 2) {
+    mode = 'join';
+    join = { slots: [null, null] };
+    ui.updateJoin(join.slots.map(slotView), AVATARS, portraits);
+    ui.showScreen('join');
+  } else {
+    beginRace([{ dev: 'solo', avatar: settings.avatar }]);
+  }
+}
 
-  const me = settings.avatar;
-  const rival = (me + 1) % AVATARS.length;
-  const slots = [gridSlot(0), gridSlot(1)];
-  const aiKart = createKart(slots[0].x, slots[0].z, slots[0].heading);       // KI startet vorn
-  const myKart = createKart(slots[1].x, slots[1].z, slots[1].heading);
-  const karts = [myKart, aiKart];
+function slotView(sl) {
+  return sl ? { dev: sl.dev, devName: deviceName(sl.dev), avatar: sl.avatar } : null;
+}
+
+// Beitreten: Jedes Geraet tritt mit seiner Gas-Taste bei. Links/rechts wechselt den Fahrer.
+function handleJoin(ev) {
+  const slots = join.slots;
+  if (ev.action === 'back') { enterMenu(); return; }
+  if (ev.dev === 'kbd') { if (ev.action === 'start' && slots.every(Boolean)) beginRace(slots); return; }
+  const idx = slots.findIndex(s => s && s.dev === ev.dev);
+  if (ev.action === 'gas') {
+    if (idx >= 0) { if (slots.every(Boolean)) { beginRace(slots); return; } }
+    else {
+      const free = slots.indexOf(null);
+      if (free < 0) return;
+      const other = slots[1 - free];
+      let av = free === 0 ? settings.avatar : (settings.avatar + 1) % AVATARS.length;
+      if (other && other.avatar === av) av = (av + 1) % AVATARS.length;
+      slots[free] = { dev: ev.dev, avatar: av };
+    }
+  } else if ((ev.action === 'left' || ev.action === 'right') && idx >= 0) {
+    const dir = ev.action === 'left' ? -1 : 1;
+    const other = slots[1 - idx];
+    let av = slots[idx].avatar;
+    do { av = (av + dir + AVATARS.length) % AVATARS.length; } while (other && other.avatar === av);
+    slots[idx].avatar = av;
+  } else if (ev.action === 'start' && slots.every(Boolean)) { beginRace(slots); return; }
+  ui.updateJoin(slots.map(slotView), AVATARS, portraits);
+}
+
+// players: [{ dev, avatar }]. dev 'solo' = Einzelspiel (Tastatur, Touch, Gamepad zusammen).
+function beginRace(players) {
+  clearGame();
+  join = null;
+  for (const v of menuViews) v.root.visible = false;
+  const used = players.map(p => p.avatar);
+  const rival = AVATARS.findIndex((a, i) => !used.includes(i));
+  const two = players.length === 2;
+
+  // Reihenfolge: zuerst die Spieler, dann die KI. Die KI startet vorn.
+  const karts = [], views = [], entries = [];
+  players.forEach((p, i) => {
+    const g = gridSlot(i + 1);
+    const k = createKart(g.x, g.z, g.heading);
+    karts.push(k);
+    views.push(createKartView(scene, models[AVATARS[p.avatar].model]));
+    entries.push({ kart: k, name: AVATARS[p.avatar].name + (two ? ` (Spieler ${i + 1})` : ''), isPlayer: true });
+  });
+  const g0 = gridSlot(0);
+  const aiKart = createKart(g0.x, g0.z, g0.heading);
+  karts.push(aiKart);
+  views.push(createKartView(scene, models[AVATARS[rival].model]));
+  entries.push({ kart: aiKart, name: AVATARS[rival].name + ' (KI)' });
   for (const k of karts) collideWall(k, track);
-  const race = createRace(track, [
-    { kart: myKart, name: AVATARS[me].name, isPlayer: true },
-    { kart: aiKart, name: AVATARS[rival].name + ' (KI)' },
-  ], settings.laps);
+
   game = {
-    race, karts,
-    views: [createKartView(scene, models[AVATARS[me].model]), createKartView(scene, models[AVATARS[rival].model])],
-    ais: [createAi(), createAi()],          // [0] faehrt fuer den Spieler nach dem Ziel weiter
-    cc: createChaseCam(camera),
-    acc: 0, lastCount: 99, finishedAt: null, resultShown: false, resultRefresh: 0, impactCd: [0, 0],
+    players: players.map(p => ({ ...p })),
+    race: createRace(track, entries, settings.laps),
+    karts, views,
+    ais: karts.map(() => createAi()),     // fuer Spieler: faehrt nach dem Ziel weiter
+    humans: players.map((p, i) => ({ dev: p.dev, cc: createChaseCam(cameras[i]), cam: cameras[i], done: false })),
+    acc: 0, lastCount: 99, startDone: false, finishedAt: null, resultShown: false, resultRefresh: 0,
+    impactCd: karts.map(() => 0),
   };
   startRaceSound(snd, karts.length);
   mode = 'race';
+  applySize();
+  ui.createHuds(players.length);
+  ui.showHuds(true);
   ui.showScreen(null);
-  ui.showHud(true);
+}
+
+function restart() {
+  if (game) beginRace(game.players);
 }
 
 function pause() {
@@ -178,57 +263,71 @@ function resume() {
   ui.showScreen(game.resultShown ? 'result' : null);
 }
 
+const listeners = () => game.humans.map((h, i) => game.karts[i]);
+
 function step(dt) {
-  const g = game, race = g.race, me = g.race.entries[0];
+  const g = game, race = g.race, nh = g.humans.length;
   const drive = canDrive(race);
   g.karts.forEach((k, i) => {
-    let inp = NO_INPUT;
-    if (drive) {
-      if (i === 0 && me.finishTime === null && !AUTOPILOT) inp = readSolo();
-      else inp = aiInput(g.ais[i], k, track);
-    }
+    const e = race.entries[i];
+    let inp;
+    if (i < nh && e.finishTime === null && !AUTOPILOT) inp = g.humans[i].dev === 'solo' ? readSolo() : readDevice(g.humans[i].dev);
+    else inp = aiInput(g.ais[i], k, track);
+    if (!drive) {
+      if (i < nh && !AUTOPILOT) noteStartInput(race, e, inp.throttle);
+      inp = NO_INPUT;
+    } else if (e.stall > 0) inp = NO_INPUT;
     stepKart(k, inp, dt);
     collideWall(k, track);
+    checkPads(k, track);
     g.impactCd[i] = Math.max(0, g.impactCd[i] - dt);
-    if (k.wallHit > 2 && g.impactCd[i] === 0) { playImpact(snd, k.wallHit, k, g.karts[0]); g.impactCd[i] = 0.3; }
-    if (k.boostStart) playBoost(snd, k, g.karts[0]);
+    if (k.wallHit > 2 && g.impactCd[i] === 0) { playImpact(snd, k.wallHit, k, listeners()); g.impactCd[i] = 0.3; }
+    if (k.boostStart) playBoost(snd, k, listeners());
   });
-  const hit = collideKarts(g.karts[0], g.karts[1]);
-  if (hit > 2) playImpact(snd, hit, g.karts[1], g.karts[0]);
-
-  const lapBefore = me.lap;
-  stepRace(race, dt);
-  if (me.lap > lapBefore && me.finishTime === null && me.lap === race.laps - 1) ui.showBanner('Letzte Runde!');
-  if (me.finishTime !== null && g.finishedAt === null) {
-    g.finishedAt = race.time;
-    ui.showBanner(me.place === 1 ? 'Ziel! Platz 1' : 'Ziel! Platz ' + me.place, 2.2);
+  for (let a = 0; a < g.karts.length; a++) {
+    for (let b = a + 1; b < g.karts.length; b++) {
+      const hit = collideKarts(g.karts[a], g.karts[b]);
+      if (hit > 2) playImpact(snd, hit, g.karts[b], listeners());
+    }
   }
+
+  const lapsBefore = race.entries.map(e => e.lap);
+  stepRace(race, dt);
+  if (!g.startDone && race.phase !== 'countdown') {
+    g.startDone = true;
+    race.entries.forEach((e, i) => { if (i < nh && e.start === 'turbo') playBoost(snd, e.kart, listeners()); });
+  }
+  g.humans.forEach((h, i) => {
+    const e = race.entries[i];
+    if (e.lap > lapsBefore[i] && e.finishTime === null && e.lap === race.laps - 1) ui.showBanner(i, 'Letzte Runde!');
+    if (e.finishTime !== null && !h.done) {
+      h.done = true;
+      ui.showBanner(i, 'Ziel! Platz ' + e.place, 2.2);
+    }
+  });
+  if (g.finishedAt === null && g.humans.every(h => h.done)) g.finishedAt = race.time;
 }
 
 function updateCountdown(g) {
   const t = g.race.time;
-  if (t < 0) {
-    const n = Math.ceil(-t);
-    if (n !== g.lastCount) { g.lastCount = n; ui.setCountdown(String(n)); playBeep(snd, false); }
-  } else if (g.lastCount > 0) {
-    g.lastCount = 0;
-    ui.setCountdown('LOS!');
-    playBeep(snd, true);
-  } else if (t > 0.9 && g.lastCount === 0) {
-    g.lastCount = -1;
-    ui.setCountdown('');
-  }
+  g.humans.forEach((h, i) => ui.updateCountdown(i, t, g.race.entries[i], START_WINDOW));
+  const n = t < 0 ? Math.ceil(-t) : 0;
+  if (n !== g.lastCount && g.lastCount > 0) playBeep(snd, n === 0);   // 3, 2, 1 tief, Start hoch
+  g.lastCount = n;
 }
 
 const timer = new THREE.Timer();
+let wasRacing = false;
 function frame(now) {
   timer.update(now);
   const dt = Math.min(timer.getDelta(), 0.1);
+  pollPads();
+  handleEvents(takeEvents());
 
-  if (mode === 'menu') {
+  if (mode === 'menu' || mode === 'join') {
     orbit += dt * 0.07;
-    camera.position.set(center.x + Math.cos(orbit) * 125, 75, center.z + Math.sin(orbit) * 125);
-    camera.lookAt(center);
+    cameras[0].position.set(center.x + Math.cos(orbit) * 125, 75, center.z + Math.sin(orbit) * 125);
+    cameras[0].lookAt(center);
   } else if (game) {
     const g = game;
     if (mode === 'race') {
@@ -237,25 +336,47 @@ function frame(now) {
       updateCountdown(g);
       if (g.finishedAt !== null && !g.resultShown && g.race.time - g.finishedAt > 2.5) {
         g.resultShown = true;
-        ui.showResult(g.race, g.race.entries[0]);
+        ui.showResult(g.race, g.race.entries.slice(0, g.humans.length));
       }
       if (g.resultShown && (g.resultRefresh -= dt) <= 0) {
         g.resultRefresh = 0.5;
-        ui.showResult(g.race, g.race.entries[0]);
+        ui.showResult(g.race, g.race.entries.slice(0, g.humans.length));
       }
+      updateSmoke(smoke, dt);
+      animatePads(dt);
     }
     g.karts.forEach((k, i) => updateKartView(g.views[i], k, mode === 'race' ? dt : 0, mode === 'race' ? smoke : null));
-    if (mode === 'race') updateSmoke(smoke, dt);
-    updateChaseCam(g.cc, g.karts[0], dt);
-    ui.updateHud(g.race.entries[0], g.race, g.karts[0].speed);
-    updateRaceSound(snd, g.karts, g.karts[0], mode !== 'race');
+    g.humans.forEach((h, i) => {
+      updateChaseCam(h.cc, g.karts[i], dt, track);
+      ui.updateHud(i, g.race.entries[i], g.race, g.karts[i].speed);
+    });
+    updateRaceSound(snd, g.karts, listeners(), mode !== 'race');
   }
-  // Touch-Knoepfe nur waehrend der Fahrt (nicht im Menue, in der Pause oder beim Ergebnis).
-  const racing = mode === 'race' && game !== null && !game.resultShown;
+  // Touch-Knoepfe nur im Einzelspiel waehrend der Fahrt.
+  const racing = mode === 'race' && game !== null && !game.resultShown && game.humans.length === 1;
   if (racing !== wasRacing) { wasRacing = racing; document.body.classList.toggle('racing', racing); if (!racing) resetTouch(); }
-  renderer.render(scene, camera);
+  render();
 }
-let wasRacing = false;
+
+function render() {
+  const W = window.innerWidth, H = window.innerHeight;
+  if (!isSplit()) {
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, W, H);
+    renderer.render(scene, cameras[0]);
+    return;
+  }
+  // WebGL zaehlt y von unten: obere Haelfte = Spieler 1, untere = Spieler 2.
+  const h = Math.floor(H / 2);
+  renderer.setScissorTest(true);
+  renderer.setViewport(0, H - h, W, h);
+  renderer.setScissor(0, H - h, W, h);
+  renderer.render(scene, cameras[0]);
+  renderer.setViewport(0, 0, W, H - h);
+  renderer.setScissor(0, 0, W, H - h);
+  renderer.render(scene, cameras[1]);
+  renderer.setScissorTest(false);
+}
 
 boot().catch((e) => {
   console.error(e);
