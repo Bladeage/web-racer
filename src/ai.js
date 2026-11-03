@@ -16,10 +16,10 @@ export function createAi(opts = {}) {
 }
 
 // Zielgeschwindigkeit: kleinste Kurvengeschwindigkeit im Bremsweg voraus, inklusive Bremsweg.
-function targetSpeed(ai, track, s) {
+function targetSpeed(ai, track, s, vMax) {
   const { curv, cum, length } = track;
   const n = curv.length;
-  const vTop = KART.maxSpeed * ai.speedFactor;
+  const vTop = vMax * ai.speedFactor;
   let v = vTop;
   const range = vTop * vTop / (2 * ai.decel) + 5;
   const i0 = pointAt(track, s).idx;
@@ -44,11 +44,12 @@ export function aiInput(ai, kart, track) {
   const fwd = dx * fx + dz * fz;
   const ang = Math.atan2(lat, fwd);
   const steer = Math.max(-1, Math.min(1, ang * 2.5));
-  const vt = targetSpeed(ai, track, kart.s);
+  const vMax = (kart.P || KART).maxSpeed;
+  const vt = targetSpeed(ai, track, kart.s, vMax);
   return {
     throttle: v < vt ? 1 : 0,
     // Im Schub auf der Geraden nicht bremsen, nur wenn eine Kurve die Geschwindigkeit begrenzt.
-    brake: v > vt + 1.5 && vt < KART.maxSpeed * ai.speedFactor - 0.1 ? 1 : 0,
+    brake: v > vt + 1.5 && vt < vMax * ai.speedFactor - 0.1 ? 1 : 0,
     steer,
     drift: false,
   };
