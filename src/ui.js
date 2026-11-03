@@ -18,11 +18,15 @@ export function buildAvatarCards(avatars, portraits, selected, onSelect) {
   avatars.forEach((a, i) => {
     const b = document.createElement('button');
     b.className = 'avatar' + (i === selected ? ' on' : '');
-    b.innerHTML = '<img alt=""><b></b><small></small>';
+    b.innerHTML = '<img alt=""><b></b><small></small><div class="bars"></div>';
     b.querySelector('img').src = portraits[i];
     b.querySelector('b').textContent = a.name;
     b.querySelector('b').style.color = a.color;
     b.querySelector('small').textContent = a.motto;
+    b.title = a.motto;
+    // Werte-Balken: Tempo, Beschleunigung, Kurven (1 bis 5)
+    b.querySelector('.bars').innerHTML = ['Tempo', 'Beschl.', 'Kurven'].map((n, j) =>
+      `<span>${n}</span><i style="--v:${a.bars[j] * 20}%"></i>`).join('');
     b.addEventListener('click', () => {
       box.querySelectorAll('.avatar').forEach((x, j) => x.classList.toggle('on', j === i));
       onSelect(i);
@@ -54,11 +58,55 @@ export function bindMenu(h) {
   $('joinBack').addEventListener('click', h.onMenu);
 }
 
+// Streckenwahl: Knoepfe mit Namen, daneben eine kleine Vorschau der gewaehlten Strecke.
+export function buildTrackChoice(tracks, selected, onSelect) {
+  const box = $('tracks');
+  box.innerHTML = '';
+  const show = (i) => {
+    drawTrackShape($('trackPreview'), tracks[i], 4);
+    $('trackInfo').textContent = Math.round(tracks[i].length) + ' m';
+  };
+  tracks.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.textContent = t.name;
+    b.className = i === selected ? 'on' : '';
+    b.addEventListener('click', () => {
+      box.querySelectorAll('button').forEach((x, j) => x.classList.toggle('on', j === i));
+      show(i);
+      onSelect(i);
+    });
+    box.appendChild(b);
+  });
+  show(selected);
+}
+
+// Strecke als Linie in ein Canvas zeichnen (Vorschau und Minikarte). Gibt die Umrechnung zurueck.
+function drawTrackShape(canvas, track, line) {
+  const g = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, pad = line + 3;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (const p of track.pts) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
+  const sc = Math.min((W - 2 * pad) / (x1 - x0), (H - 2 * pad) / (z1 - z0));
+  const ox = (W - (x1 - x0) * sc) / 2 - x0 * sc, oz = (H - (z1 - z0) * sc) / 2 - z0 * sc;
+  g.clearRect(0, 0, W, H);
+  g.lineJoin = 'round';
+  g.beginPath();
+  track.pts.forEach((p, k) => (k ? g.lineTo(p.x * sc + ox, p.z * sc + oz) : g.moveTo(p.x * sc + ox, p.z * sc + oz)));
+  g.closePath();
+  g.strokeStyle = 'rgba(255,255,255,0.85)';
+  g.lineWidth = line;
+  g.stroke();
+  // Ziellinie
+  const f = track.tiles[0];
+  g.fillStyle = '#ffb52e';
+  g.fillRect(f.x * sc + ox - line, f.z * sc + oz - line, line * 2, line * 2);
+  return { sc, ox, oz };
+}
+
 export function setMenuValues(laps, players, volume, trackName) {
   $('laps').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.laps) === laps));
   $('players').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.players) === players));
   $('volume').value = Math.round(volume * 100);
-  $('trackName').textContent = trackName;
 }
 
 // ---------- Beitreten (2 Spieler) ----------
@@ -106,6 +154,8 @@ export function createHuds(n) {
       <div class="hud-tl"><div class="lap"></div><div class="time"></div><div class="best dim"></div></div>
       <div class="hud-tr"><span class="pos"></span><span class="dim of"></span></div>
       <div class="hud-br"><span class="speed">0</span> <span class="dim">km/h</span></div>
+      <canvas class="mini" width="150" height="150"></canvas>
+      <div class="gap"></div>
       <div class="cd"><div class="lights"><i></i><i></i><i></i></div><div class="cd-num"></div><div class="cd-msg"></div></div>
       <div class="banner"></div>`;
     if (n === 2) {
@@ -120,6 +170,7 @@ export function createHuds(n) {
       pos: h.querySelector('.pos'), of: h.querySelector('.of'), speed: h.querySelector('.speed'),
       cd: h.querySelector('.cd'), lights: h.querySelectorAll('.lights i'), num: h.querySelector('.cd-num'),
       msg: h.querySelector('.cd-msg'), banner: h.querySelector('.banner'), bannerTimer: 0, cdKey: '',
+      mini: h.querySelector('.mini'), gap: h.querySelector('.gap'), gapKey: '',
     });
   }
 }
@@ -202,4 +253,44 @@ export function showResult(race, humans) {
   });
   $('resultTable').innerHTML = rows.join('');
   showScreen('result');
+}
+
+// ---------- Minikarte und Abstand ----------
+
+let miniBase = null, miniMap = null;
+
+// Einmal pro Rennen: Strecke vorzeichnen (wird dann je Bild nur kopiert).
+export function setMinimap(track) {
+  miniBase = document.createElement('canvas');
+  miniBase.width = miniBase.height = 150;
+  miniMap = drawTrackShape(miniBase, track, 7);
+}
+
+// dots: [{ x, z, color, me }]
+export function drawMinimap(i, dots) {
+  const h = huds[i];
+  if (!h || !miniBase) return;
+  const g = h.mini.getContext('2d');
+  g.clearRect(0, 0, 150, 150);
+  g.drawImage(miniBase, 0, 0);
+  for (const d of dots) {
+    g.beginPath();
+    g.arc(d.x * miniMap.sc + miniMap.ox, d.z * miniMap.sc + miniMap.oz, d.me ? 6 : 4.5, 0, Math.PI * 2);
+    g.fillStyle = d.color;
+    g.fill();
+    if (d.me) { g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke(); }
+  }
+}
+
+const fmtGap = (t) => t.toFixed(1).replace('.', ',') + ' s';
+
+// Abstand zum Vorder- und Hintermann in Sekunden (null = keiner).
+export function updateGap(i, ahead, behind) {
+  const h = huds[i];
+  if (!h) return;
+  const parts = [];
+  if (ahead !== null) parts.push('<span class="up">\u25b2 ' + fmtGap(ahead) + '</span>');
+  if (behind !== null) parts.push('<span class="down">\u25bc ' + fmtGap(behind) + '</span>');
+  const key = parts.join(' ');
+  if (key !== h.gapKey) { h.gapKey = key; h.gap.innerHTML = key; }
 }

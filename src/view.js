@@ -40,7 +40,7 @@ export function buildWorld(scene, track, models) {
     const nearStart = Math.abs(c.gx - start.gx) + Math.abs(c.gz - start.gz) === 1;
     let name = 'decoration-forest';
     if (nearStart) name = 'decoration-tents';
-    else if (c.inside && r < 0.35) name = 'decoration-empty';
+    else if (c.inside && r < 0.35) name = track.decoInside;
     const m = models[name].clone(true);
     m.scale.setScalar(TILE_SCALE);
     m.position.set(c.x, 0, c.z);
