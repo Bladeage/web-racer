@@ -172,3 +172,20 @@ h1 { display: inline; }
 @media (max-height: 450px) {
   #trackPreview, #trackInfo { display: none; }
 }
+
+/* Grafik-Stufe und Bildrate */
+.chk { margin-left: 10px; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.chk input { accent-color: var(--accent); vertical-align: middle; }
+.fps { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); font: 600 12px system-ui, sans-serif; color: #fff; background: rgba(0,0,0,0.45); padding: 2px 8px; border-radius: 6px; display: none; pointer-events: none; z-index: 6; }
+.fps.show { display: block; }
+@media (max-width: 560px) {
+  .avatar img { height: 56px; aspect-ratio: auto; }
+}
+@media (max-height: 450px) {
+  .row { gap: 4px 16px; }
+  h2 { margin: 4px 0 2px; }
+}
+@media (max-width: 560px) { #trackPreview { display: none; } }
+
+/* Auswahl per Gamepad */
+.padfocus { outline: 3px solid #fff !important; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(255, 181, 46, 0.55); }
