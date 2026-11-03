@@ -25,6 +25,30 @@ export const TRACK_1 = {
   ],
 };
 
+// Strecke 2: lang, mit Schikane oben und sehr langer Start-Ziel-Geraden. Mehr Zelte.
+export const TRACK_2 = {
+  name: 'Zeltplatz', layout: 'FSSSRSSRSSSRLSLSRSSRSSSRSSSS', startDir: 3, decoInside: 'decoration-tents',
+  pads: [
+    { tile: 25, at: 0.3, d: 0, len: 6, w: 5 },      // lange Start-Ziel-Gerade, mittig
+    { tile: 9, at: 0.4, d: 3.5, len: 6, w: 4.5 },   // Gerade vor der Schikane, rechts
+    { tile: 3, at: 0.6, d: -3.5, len: 6, w: 4.5 },  // vor der ersten Rechtskurve, aussen
+    { tile: 18, at: 0.6, d: -3.5, len: 6, w: 4.5 }, // vor der Rechtskurve rechts oben, aussen
+  ],
+};
+
+// Strecke 3: Serpentinen mit zwei Schikanen.
+export const TRACK_3 = {
+  name: 'Serpentinen', layout: 'FSSSRSRSLSRSSRLSRSSRSS', startDir: 3,
+  pads: [
+    { tile: 2, at: 0.3, d: 0, len: 6, w: 5 },       // Start-Ziel-Gerade, mittig
+    { tile: 20, at: 0.3, d: 3.5, len: 6, w: 4.5 },  // Zielkurve raus, rechts
+    { tile: 12, at: 0.6, d: -3.5, len: 6, w: 4.5 }, // vor der Rechtskurve, aussen
+    { tile: 18, at: 0.6, d: -3.5, len: 6, w: 4.5 }, // vor der letzten Rechtskurve, aussen
+  ],
+};
+
+export const TRACKS = [TRACK_1, TRACK_2, TRACK_3];
+
 const STEP = 0.5; // Abstand der Mittellinien-Punkte in m
 
 // Baut Kacheln und Mittellinie. Wirft einen Fehler, wenn die Strecke nicht geschlossen ist.
@@ -32,8 +56,11 @@ export function buildTrack(def) {
   let gx = 0, gz = 0, dir = def.startDir;
   const tiles = [];
   const pts = [];
+  const seen = new Set();
   for (const c of def.layout) {
     const cx = gx * TILE, cz = gz * TILE;
+    if (seen.has(gx + ',' + gz)) throw new Error('Strecke ueberschneidet sich');
+    seen.add(gx + ',' + gz);
     const inDir = dir;
     if (c === 'L') dir = (dir + 3) % 4;
     else if (c === 'R') dir = (dir + 1) % 4;
@@ -73,7 +100,7 @@ export function buildTrack(def) {
   const lineS = TILE / 2;
   const sd = DIR_VEC[def.startDir];
   return {
-    name: def.name, tiles, pts, cum, curv, length, halfWidth: HALF_WIDTH, lineS, pads,
+    name: def.name, decoInside: def.decoInside || 'decoration-empty', tiles, pts, cum, curv, length, halfWidth: HALF_WIDTH, lineS, pads,
     start: { x: tiles[0].x, z: tiles[0].z, heading: Math.atan2(sd[0], sd[1]) },
   };
 }

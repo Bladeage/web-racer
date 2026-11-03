@@ -3,7 +3,7 @@
 // Split-Screen: ein Renderer, zwei Kameras, obere und untere Bildhaelfte (setViewport, setScissor).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { buildTrack, TRACK_1, pointAt } from './track.js';
+import { buildTrack, TRACKS, pointAt } from './track.js';
 import { createKart, stepKart, collideWall, collideKarts, checkPads } from './kart.js';
 import { createAi, aiInput } from './ai.js';
 import { createRace, stepRace, canDrive, noteStartInput, START_WINDOW } from './race.js';
@@ -34,7 +34,7 @@ scene.add(sun);
 const cameras = [new THREE.PerspectiveCamera(60, 1, 0.1, 600), new THREE.PerspectiveCamera(60, 1, 0.1, 600)];
 
 // Einstellungen bleiben im Browser gespeichert, falls erlaubt.
-const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1 };
+const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1, track: 0 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('webracer.settings') || '{}')); } catch (e) { /* ohne Speicher */ }
 function saveSettings() {
   try { localStorage.setItem('webracer.settings', JSON.stringify(settings)); } catch (e) { /* ohne Speicher */ }
@@ -42,7 +42,7 @@ function saveSettings() {
 
 const snd = createSound();
 snd.volume = settings.volume;
-let track, models, smoke, portraits;
+let track, models, smoke, portraits, world = null;
 let menuViews = [];
 let mode = 'loading';            // menu, join, race, paused
 let game = null;
@@ -74,24 +74,15 @@ async function boot() {
   models = {};
   await Promise.all(MODELS.map(async (n) => { models[n] = (await loader.loadAsync('assets/models/' + n + '.glb')).scene; }));
   const smokeTex = await new THREE.TextureLoader().loadAsync('assets/sprites/smoke.png');
-  track = buildTrack(TRACK_1);
-  buildWorld(scene, track, models);
   smoke = createSmoke(scene, smokeTex);
-  for (const t of track.tiles) center.add(new THREE.Vector3(t.x, 0, t.z));
-  center.divideScalar(track.tiles.length);
-
-  // Im Menue stehen alle Fahrer in der Startaufstellung.
-  menuViews = AVATARS.map((a, i) => {
-    const v = createKartView(scene, models[a.model]);
-    const g = gridSlot(i);
-    updateKartView(v, createKart(g.x, g.z, g.heading), 0, null);
-    return v;
-  });
+  if (!(settings.track < TRACKS.length)) settings.track = 0;
+  loadTrack(settings.track);
 
   portraits = renderPortraits(models, AVATARS.map(a => a.model));
   if (settings.avatar >= AVATARS.length) settings.avatar = 0;
   ui.buildAvatarCards(AVATARS, portraits, settings.avatar, (i) => { settings.avatar = i; saveSettings(); });
-  ui.setMenuValues(settings.laps, settings.players, settings.volume, track.name);
+  ui.setMenuValues(settings.laps, settings.players, settings.volume);
+  ui.buildTrackChoice(TRACKS.map(d => buildTrack(d)), settings.track, (i) => { settings.track = i; saveSettings(); loadTrack(i); });
   ui.bindMenu({
     onLaps: (n) => { settings.laps = n; saveSettings(); },
     onPlayers: (n) => { settings.players = n; saveSettings(); },
@@ -116,6 +107,27 @@ async function boot() {
   enterMenu();
   renderer.setAnimationLoop(frame);
   window.spielLaeuft = true;
+}
+
+// Strecke laden: Welt neu aufbauen, Fahrer im Menue in die Startaufstellung stellen.
+function loadTrack(i) {
+  if (world) {
+    scene.remove(world);
+    world.traverse((o) => { if (o.material && o.material.map && o.material.map.isCanvasTexture) o.material.map.dispose(); });
+  }
+  for (const v of menuViews) removeKartView(scene, v);
+  track = buildTrack(TRACKS[i]);
+  world = buildWorld(scene, track, models);
+  center.set(0, 0, 0);
+  for (const t of track.tiles) center.add(new THREE.Vector3(t.x, 0, t.z));
+  center.divideScalar(track.tiles.length);
+  menuViews = AVATARS.map((a, j) => {
+    const v = createKartView(scene, models[a.model]);
+    const g = gridSlot(j);
+    updateKartView(v, createKart(g.x, g.z, g.heading), 0, null);
+    v.root.visible = mode === 'menu' || mode === 'join' || mode === 'loading';
+    return v;
+  });
 }
 
 function onKey(code) {
@@ -218,13 +230,13 @@ function beginRace(players) {
   const karts = [], views = [], entries = [];
   players.forEach((p, i) => {
     const g = gridSlot(i + 1);
-    const k = createKart(g.x, g.z, g.heading);
+    const k = createKart(g.x, g.z, g.heading, AVATARS[p.avatar].stats);
     karts.push(k);
     views.push(createKartView(scene, models[AVATARS[p.avatar].model]));
     entries.push({ kart: k, name: AVATARS[p.avatar].name + (two ? ` (Spieler ${i + 1})` : ''), isPlayer: true });
   });
   const g0 = gridSlot(0);
-  const aiKart = createKart(g0.x, g0.z, g0.heading);
+  const aiKart = createKart(g0.x, g0.z, g0.heading, AVATARS[rival].stats);
   karts.push(aiKart);
   views.push(createKartView(scene, models[AVATARS[rival].model]));
   entries.push({ kart: aiKart, name: AVATARS[rival].name + ' (KI)' });
@@ -238,7 +250,9 @@ function beginRace(players) {
     humans: players.map((p, i) => ({ dev: p.dev, cc: createChaseCam(cameras[i]), cam: cameras[i], done: false })),
     acc: 0, lastCount: 99, startDone: false, finishedAt: null, resultShown: false, resultRefresh: 0,
     impactCd: karts.map(() => 0),
+    colors: [...players.map(p => AVATARS[p.avatar].color), AVATARS[rival].color],
   };
+  ui.setMinimap(track);
   startRaceSound(snd, karts.length);
   mode = 'race';
   applySize();
@@ -349,6 +363,8 @@ function frame(now) {
     g.humans.forEach((h, i) => {
       updateChaseCam(h.cc, g.karts[i], dt, track);
       ui.updateHud(i, g.race.entries[i], g.race, g.karts[i].speed);
+      ui.drawMinimap(i, g.karts.map((k, j) => ({ x: k.x, z: k.z, color: g.colors[j], me: j === i })));
+      updateGaps(g, i);
     });
     updateRaceSound(snd, g.karts, listeners(), mode !== 'race');
   }
@@ -356,6 +372,22 @@ function frame(now) {
   const racing = mode === 'race' && game !== null && !game.resultShown && game.humans.length === 1;
   if (racing !== wasRacing) { wasRacing = racing; document.body.classList.toggle('racing', racing); if (!racing) resetTouch(); }
   render();
+}
+
+// Abstand zum Vorder- und Hintermann: Wegdifferenz geteilt durch das Tempo des Hinteren (mind. 8 m/s).
+function updateGaps(g, i) {
+  const me = g.race.entries[i];
+  if (me.finishTime !== null || g.race.phase === 'countdown') { ui.updateGap(i, null, null); return; }
+  let ahead = null, behind = null;
+  for (const e of g.race.entries) {
+    if (e === me || e.finishTime !== null) continue;
+    const d = e.prog - me.prog;
+    if (d > 0 && (ahead === null || d < ahead.d)) ahead = { d, e };
+    if (d < 0 && (behind === null || -d < behind.d)) behind = { d: -d, e };
+  }
+  ui.updateGap(i,
+    ahead ? ahead.d / Math.max(8, me.kart.speed) : null,
+    behind ? behind.d / Math.max(8, behind.e.kart.speed) : null);
 }
 
 function render() {

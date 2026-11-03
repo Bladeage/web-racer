@@ -34,3 +34,11 @@ test('Projektion: Punkt neben der Mittellinie hat den erwarteten Abstand', () =>
 test('Kacheldrehung: jede Kurve hat eine Drehung', () => {
   for (const t of track.tiles) assert.ok(Number.isFinite(t.rot));
 });
+
+import { TRACKS } from '../src/track.js';
+test('Alle Strecken sind geschlossen, ohne Ueberschneidung und lang genug', () => {
+  for (const def of TRACKS) {
+    const t = buildTrack(def);
+    assert.ok(t.length > 300, def.name + ' ' + t.length);
+  }
+});
