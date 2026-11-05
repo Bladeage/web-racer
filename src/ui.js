@@ -49,6 +49,13 @@ export function bindMenu(h) {
   bindSeg('players', 'players', h.onPlayers);
   $('quality').addEventListener('click', (e) => { const q = e.target.dataset && e.target.dataset.q; if (q) h.onQuality(q); });
   $('fpsToggle').addEventListener('change', (e) => h.onFps(e.target.checked));
+  $('skyToggle').addEventListener('change', (e) => h.onSky(e.target.checked));
+  $('difficulty').addEventListener('click', (e) => {
+    const d = e.target.dataset && e.target.dataset.lvl;
+    if (!d) return;
+    $('difficulty').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target));
+    h.onDifficulty(d);
+  });
   $('volume').addEventListener('input', (e) => h.onVolume(e.target.value / 100));
   $('start').addEventListener('click', h.onStart);
   $('resume').addEventListener('click', h.onResume);
@@ -105,12 +112,14 @@ function drawTrackShape(canvas, track, line) {
   return { sc, ox, oz };
 }
 
-export function setMenuValues(laps, players, volume, quality, fps) {
+export function setMenuValues(laps, players, volume, quality, fps, difficulty, sky) {
   $('laps').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.laps) === laps));
   $('players').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.players) === players));
   $('volume').value = Math.round(volume * 100);
   $('quality').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.q === quality));
   $('fpsToggle').checked = !!fps;
+  $('skyToggle').checked = !!sky;
+  $('difficulty').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.lvl === difficulty));
 }
 
 // ---------- Beitreten (2 Spieler) ----------
@@ -319,7 +328,7 @@ export function tickFps(dt) {
 function navItems() {
   const scr = document.querySelector('.screen.show');
   if (!scr) return [];
-  return [...scr.querySelectorAll('button, input')].filter(el => !el.disabled && el.offsetParent !== null);
+  return [...scr.querySelectorAll('button, input, summary')].filter(el => !el.disabled && el.offsetParent !== null);
 }
 
 function current(items) {

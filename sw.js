@@ -10,11 +10,13 @@ const FILES = [
   'style.css',
   'src/ai.js',
   'src/avatars.js',
+  'src/birds.js',
   'src/camera.js',
   'src/input.js',
   'src/kart.js',
   'src/main.js',
   'src/race.js',
+  'src/sky.js',
   'src/sound.js',
   'src/track.js',
   'src/ui.js',
@@ -41,6 +43,7 @@ const FILES = [
   THREE_BASE + 'examples/jsm/loaders/GLTFLoader.js',
   THREE_BASE + 'examples/jsm/utils/BufferGeometryUtils.js',
   THREE_BASE + 'examples/jsm/utils/SkeletonUtils.js',
+  THREE_BASE + 'examples/jsm/objects/Lensflare.js',
 ];
 
 self.addEventListener('install', (e) => {

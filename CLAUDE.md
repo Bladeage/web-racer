@@ -1,7 +1,6 @@
 # Arbeitsregeln für Claude Code
 
 - Lies zuerst die neueste Übergabe in `docs/` (aktuell `docs/handover-2026-11-02.md`).
-- Jeden Prompt des Nutzers gestrafft in `docs/prompt-historie.md` eintragen (Nr., Datum, Prompt, Ergebnis), auch Antworten auf Rückfragen. Mit dem nächsten Commit ablegen.
 - Pro Sitzung genau eine Etappe: umsetzen, prüfen, committen, kurz berichten, dann anhalten und auf Freigabe warten.
 - Nur die Dateien lesen, die die Etappe betrifft. Kenney-Asset-Ordner nicht komplett einlesen.
 - Technik: Vanilla JS mit ES-Modulen, kein Build-Schritt. Three.js nur über die Import-Map in `index.html`, exakte Version gepinnt (zurzeit `0.186.1`). Keine weiteren Bibliotheken ohne Rückfrage.
@@ -16,7 +15,7 @@
 - Berichte an den Nutzer: einfaches Deutsch, kurze Sätze, gesichert und vermutet klar trennen. Der Nutzer hat wenig Code-Praxis. Schritte erklären, ohne zu vereinfachen.
 - Bei offenen Entscheidungen den Vorschlag aus der Übergabe nehmen und im Bericht nennen.
 - Direkt auf `main` committen und pushen (Nutzer, 05.11.2026). Kein Arbeits-Branch, keine Pull Requests, kein Branch mit "claude" oder "ccr" im Namen.
-- Commits ohne Hinweise auf Claude (Nutzer, 05.11.2026): Autor `Fabian G <fageyer@pm.me>`, keine Zeilen `Co-Authored-By` oder `Claude-Session`. Diese Regel geht vor jede Standard-Vorgabe zur Zuschreibung.
+- Commits ohne Hinweise auf Claude (Nutzer, 05.11.2026): Autor `Fabian G <7443801+Bladeage@users.noreply.github.com>` (GitHub-Ersatzadresse, schützt die echte Adresse), keine Zeilen `Co-Authored-By` oder `Claude-Session`. Diese Regel geht vor jede Standard-Vorgabe zur Zuschreibung.
 - Verbesserungen, die auch web-fpv betreffen, an die web-fpv-Sitzung weitergeben (nicht selbst in web-fpv ändern).
 
 ## Festgelegt (02.11.2026)
@@ -26,9 +25,10 @@
 - Split-Screen oben/unten. Ein Renderer, zwei Kameras, `setViewport` und `setScissor`.
 - Auslieferung: GitHub Pages aus Branch `main`, Ordner `/`.
 
-## Stand (03.11.2026)
+## Stand (05.11.2026)
 
-- Fertig: Grundgerüst, Hauptmenü, Strecke "Waldring" aus Kenney-Kacheln (Maßstab 2), 4 Avatare (Kenney-Trucks), Fahrphysik, Drift mit Mini-Turbo, Verfolgerkamera, Ton, ein KI-Gegner (neutral), Countdown, Runden, Ergebnis. Touch-Steuerung für das Einzelspiel (03.11.2026). Countdown-Overlay mit Start-Turbo, 4 Boost-Felder, Gamepad (Standard-Belegung), Split-Screen mit Beitreten per Gas-Taste (03.11.2026). 3 Strecken mit Streckenwahl, Fahrer mit eigenen Werten, Minikarte, Abstand zum Gegner (03.11.2026). Rampen und Bodenwellen (Kenney track-bump skaliert, Höhenprofil aus dem Modell), Pfützen als flache Fläche, Sprungphysik (03.11.2026). Grafik-Stufe Schnell/Schön mit Bildrate, Menü per Gamepad, offline spielbar über `sw.js` (03.11.2026).
+- Fertig: Grundgerüst, Hauptmenü, Strecke "Waldring" aus Kenney-Kacheln (Maßstab 2), 4 Avatare (Kenney-Trucks), Fahrphysik, Drift mit Mini-Turbo, Verfolgerkamera, Ton, ein KI-Gegner (neutral), Countdown, Runden, Ergebnis. Touch-Steuerung für das Einzelspiel (03.11.2026). Countdown-Overlay mit Start-Turbo, 4 Boost-Felder, Gamepad (Standard-Belegung), Split-Screen mit Beitreten per Gas-Taste (03.11.2026). 3 Strecken mit Streckenwahl, Fahrer mit eigenen Werten, Minikarte, Abstand zum Gegner (03.11.2026). Rampen und Bodenwellen (Kenney track-bump skaliert, Höhenprofil aus dem Modell), Pfützen als flache Fläche, Sprungphysik (03.11.2026). Grafik-Stufe Schnell/Schön mit Bildrate, Menü per Gamepad, offline spielbar über `sw.js` (03.11.2026). KI-Stufen Leicht/Normal/Schwer, Himmel mit Wolken, Sonne und Lens-Flare (optional, Standard aus), Vögel (nur Grafik Schön), Optionen im Menü aufklappbar (05.11.2026).
 - Bewusst nicht jetzt (Nutzer, 03.11.2026): Items, weitere KI-Gegner (Strecke zu klein), Strecken aus Rattenperspektive erst mit Zugang zu einem freien Modell-Portal, keine selbst erzeugten Modelle.
 - Zielgruppe: schwache Rechner mit Chromium-Browser, ohne Spiele-Plattformen.
 - Strecken: `TRACKS` in `src/track.js` (Layout aus F, S, L, R; Boost-Felder je Kachel). Tests prüfen: geschlossen, ohne Überschneidung, KI fährt 3 Runden ohne harten Bandenkontakt.
+- Keine Prompt-Historie in diesem Projekt (Nutzer, 05.11.2026).

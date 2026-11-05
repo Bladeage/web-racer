@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { buildTrack, TRACKS, pointAt, groundHeight, inPuddle } from './track.js';
 import { createKart, stepKart, collideWall, collideKarts, checkPads, stepVertical } from './kart.js';
-import { createAi, aiInput } from './ai.js';
+import { createAi, aiInput, AI_LEVELS } from './ai.js';
+import { createSky, setSky, placeSky } from './sky.js';
+import { createBirds, removeBirds, stepBirds } from './birds.js';
 import { createRace, stepRace, canDrive, noteStartInput, START_WINDOW } from './race.js';
 import { AVATARS } from './avatars.js';
 import { initInput, readSolo, readDevice, deviceName, pollPads, takeEvents, initTouch, resetTouch, isTouchDevice } from './input.js';
@@ -22,7 +24,7 @@ const NO_INPUT = { throttle: 0, brake: 0, steer: 0, drift: false };
 const AUTOPILOT = new URLSearchParams(location.search).has('autopilot');
 
 // Einstellungen bleiben im Browser gespeichert, falls erlaubt.
-const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1, track: 0, quality: 'nice', fps: false };
+const settings = { avatar: 0, laps: 3, volume: 0.7, players: 1, track: 0, quality: 'nice', fps: false, difficulty: 'normal', sky: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('webracer.settings') || '{}')); } catch (e) { /* ohne Speicher */ }
 function saveSettings() {
   try { localStorage.setItem('webracer.settings', JSON.stringify(settings)); } catch (e) { /* ohne Speicher */ }
@@ -33,8 +35,8 @@ function saveSettings() {
 // laesst sich nur beim Start festlegen).
 const FAST = settings.quality === 'fast';
 const Q = FAST
-  ? { aa: false, ratio: 1, ratioSplit: 0.75, fogNear: 50, fogFar: 150, far: 170, ring: 1, smoke: false }
-  : { aa: true, ratio: 2, ratioSplit: 1.25, fogNear: 90, fogFar: 260, far: 600, ring: 2, smoke: true };
+  ? { aa: false, ratio: 1, ratioSplit: 0.75, fogNear: 50, fogFar: 150, far: 170, ring: 1, smoke: false, birds: false }
+  : { aa: true, ratio: 2, ratioSplit: 1.25, fogNear: 90, fogFar: 260, far: 600, ring: 2, smoke: true, birds: true };
 
 // Renderer und Szene. Wenig Licht, keine Schatten (Split-Screen zeichnet doppelt).
 const canvas = document.getElementById('spiel');
@@ -50,7 +52,7 @@ const cameras = [new THREE.PerspectiveCamera(60, 1, 0.1, Q.far), new THREE.Persp
 
 const snd = createSound();
 snd.volume = settings.volume;
-let track, models, smoke, portraits, world = null;
+let track, models, smoke, portraits, world = null, sky = null, birds = null;
 let menuViews = [];
 let mode = 'loading';            // menu, join, race, paused
 let game = null;
@@ -83,13 +85,17 @@ async function boot() {
   await Promise.all(MODELS.map(async (n) => { models[n] = (await loader.loadAsync('assets/models/' + n + '.glb')).scene; }));
   const smokeTex = await new THREE.TextureLoader().loadAsync('assets/sprites/smoke.png');
   smoke = createSmoke(scene, smokeTex);
+  // Himmel mit Wolken, Sonne und Lens-Flare: optional, Standard aus.
+  sky = createSky(0x9fcbf0, Q.far);
+  setSky(sky, scene, settings.sky);
   if (!(settings.track < TRACKS.length)) settings.track = 0;
   loadTrack(settings.track);
 
   portraits = renderPortraits(models, AVATARS.map(a => a.model));
   if (settings.avatar >= AVATARS.length) settings.avatar = 0;
   ui.buildAvatarCards(AVATARS, portraits, settings.avatar, (i) => { settings.avatar = i; saveSettings(); });
-  ui.setMenuValues(settings.laps, settings.players, settings.volume, settings.quality, settings.fps);
+  if (!AI_LEVELS[settings.difficulty]) settings.difficulty = 'normal';
+  ui.setMenuValues(settings.laps, settings.players, settings.volume, settings.quality, settings.fps, settings.difficulty, settings.sky);
   ui.showFps(settings.fps);
   ui.buildTrackChoice(TRACKS.map(d => buildTrack(d)), settings.track, (i) => { settings.track = i; saveSettings(); loadTrack(i); });
   ui.bindMenu({
@@ -98,6 +104,8 @@ async function boot() {
     onVolume: (v) => { settings.volume = v; setVolume(snd, v); saveSettings(); },
     onQuality: (q) => { if (q !== settings.quality) { settings.quality = q; saveSettings(); location.reload(); } },
     onFps: (on) => { settings.fps = on; saveSettings(); ui.showFps(on); },
+    onSky: (on) => { settings.sky = on; saveSettings(); setSky(sky, scene, on); },
+    onDifficulty: (d) => { settings.difficulty = d; saveSettings(); },
     onStart: () => startFromMenu(),
     onRestart: () => restart(),
     onResume: () => resume(),
@@ -136,6 +144,8 @@ function loadTrack(i) {
   center.set(0, 0, 0);
   for (const t of track.tiles) center.add(new THREE.Vector3(t.x, 0, t.z));
   center.divideScalar(track.tiles.length);
+  removeBirds(birds);
+  birds = Q.birds ? createBirds(scene, track) : null;
   menuViews = AVATARS.map((a, j) => {
     const v = createKartView(scene, models[a.model]);
     const g = gridSlot(j);
@@ -266,7 +276,8 @@ function beginRace(players) {
     players: players.map(p => ({ ...p })),
     race: createRace(track, entries, settings.laps),
     karts, views,
-    ais: karts.map(() => createAi()),     // fuer Spieler: faehrt nach dem Ziel weiter
+    // KI-Gegner nach gewaehlter Stufe; fuer Spieler (Autopilot nach dem Ziel) immer normal.
+    ais: karts.map((k, i) => createAi(i >= players.length ? AI_LEVELS[settings.difficulty] : {})),
     humans: players.map((p, i) => ({ dev: p.dev, cc: createChaseCam(cameras[i]), cam: cameras[i], done: false })),
     acc: 0, lastCount: 99, startDone: false, finishedAt: null, resultShown: false, resultRefresh: 0,
     impactCd: karts.map(() => 0),
@@ -354,6 +365,7 @@ function updateCountdown(g) {
 
 const timer = new THREE.Timer();
 let wasRacing = false;
+let skyTime = 0;
 function frame(now) {
   timer.update(now);
   const rawDt = timer.getDelta();
@@ -392,6 +404,8 @@ function frame(now) {
     });
     updateRaceSound(snd, g.karts, listeners(), mode !== 'race');
   }
+  if (mode !== 'paused') stepBirds(birds, game && mode === 'race' ? game.karts : [], dt);
+  skyTime += dt;
   // Touch-Knoepfe nur im Einzelspiel waehrend der Fahrt.
   const racing = mode === 'race' && game !== null && !game.resultShown && game.humans.length === 1;
   if (racing !== wasRacing) { wasRacing = racing; document.body.classList.toggle('racing', racing); if (!racing) resetTouch(); }
@@ -419,6 +433,7 @@ function render() {
   if (!isSplit()) {
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, W, H);
+    placeSky(sky, cameras[0], skyTime);
     renderer.render(scene, cameras[0]);
     return;
   }
@@ -427,9 +442,11 @@ function render() {
   renderer.setScissorTest(true);
   renderer.setViewport(0, H - h, W, h);
   renderer.setScissor(0, H - h, W, h);
+  placeSky(sky, cameras[0], skyTime);
   renderer.render(scene, cameras[0]);
   renderer.setViewport(0, 0, W, H - h);
   renderer.setScissor(0, 0, W, H - h);
+  placeSky(sky, cameras[1], skyTime);
   renderer.render(scene, cameras[1]);
   renderer.setScissorTest(false);
 }

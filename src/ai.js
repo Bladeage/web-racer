@@ -4,6 +4,13 @@
 import { pointAt } from './track.js';
 import { KART } from './kart.js';
 
+// Schwierigkeitsstufen (Schaetzwerte): Anteil der Hoechstgeschwindigkeit und erlaubte Querbeschleunigung in Kurven.
+export const AI_LEVELS = {
+  leicht: { speedFactor: 0.8, latAcc: 18 },
+  normal: { speedFactor: 0.88, latAcc: 24 },
+  schwer: { speedFactor: 0.97, latAcc: 30 },
+};
+
 // Schaetzwerte, so gewaehlt, dass die KI sauber faehrt, aber schlagbar bleibt.
 export function createAi(opts = {}) {
   return {

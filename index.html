@@ -23,7 +23,7 @@
   <div id="menu" class="screen">
     <div class="panel menu">
       <h1>Web Racer</h1>
-      <p class="sub">Gegner: 1 KI (neutral)</p>
+      <p class="sub">Gegner: 1 KI</p>
       <h2>Fahrer w&auml;hlen</h2>
       <div id="avatars" class="avatars"></div>
       <div class="row">
@@ -42,30 +42,40 @@
           </div>
         </div>
         <div>
+          <h2>KI</h2>
+          <div id="difficulty" class="seg"><button data-lvl="leicht">Leicht</button><button data-lvl="normal" class="on">Normal</button><button data-lvl="schwer">Schwer</button></div>
+        </div>
+        <div>
           <h2>Runden</h2>
           <div id="laps" class="seg">
             <button data-laps="1">1</button><button data-laps="3" class="on">3</button><button data-laps="5">5</button>
           </div>
         </div>
-        <div>
-          <h2>Lautst&auml;rke</h2>
-          <input id="volume" type="range" min="0" max="100" value="70">
-        </div>
-        <div>
-          <h2>Grafik</h2>
-          <div id="quality" class="seg"><button data-q="fast">Schnell</button><button data-q="nice">Sch&ouml;n</button></div>
-          <label class="chk"><input id="fpsToggle" type="checkbox"> Bilder/s</label>
-        </div>
       </div>
+      <details class="opts">
+        <summary>Optionen: Ton, Grafik, Tasten</summary>
+        <div class="row">
+          <div>
+            <h2>Lautst&auml;rke</h2>
+            <input id="volume" type="range" min="0" max="100" value="70">
+          </div>
+          <div>
+            <h2>Grafik</h2>
+            <div id="quality" class="seg"><button data-q="fast">Schnell</button><button data-q="nice">Sch&ouml;n</button></div>
+            <label class="chk"><input id="fpsToggle" type="checkbox"> Bilder/s</label>
+            <label class="chk"><input id="skyToggle" type="checkbox"> Himmel</label>
+          </div>
+        </div>
+        <div class="keys">
+          <span><kbd>W</kbd>/<kbd>&uarr;</kbd> Gas</span>
+          <span><kbd>S</kbd>/<kbd>&darr;</kbd> Bremse, r&uuml;ckw&auml;rts</span>
+          <span><kbd>A</kbd><kbd>D</kbd>/<kbd>&larr;</kbd><kbd>&rarr;</kbd> Lenken</span>
+          <span><kbd>Umschalt links</kbd>/<kbd>Leertaste</kbd> Drift</span>
+          <span><kbd>Esc</kbd> Pause</span>
+          <span>Gamepad: <kbd>RT</kbd>/<kbd>A</kbd> Gas, <kbd>LT</kbd>/<kbd>B</kbd> Bremse, <kbd>LB</kbd>/<kbd>RB</kbd> Drift, Stick lenken, <kbd>Start</kbd> Pause</span>
+        </div>
+      </details>
       <button id="start" class="big">Rennen starten</button>
-      <div class="keys">
-        <span><kbd>W</kbd>/<kbd>&uarr;</kbd> Gas</span>
-        <span><kbd>S</kbd>/<kbd>&darr;</kbd> Bremse, r&uuml;ckw&auml;rts</span>
-        <span><kbd>A</kbd><kbd>D</kbd>/<kbd>&larr;</kbd><kbd>&rarr;</kbd> Lenken</span>
-        <span><kbd>Umschalt links</kbd>/<kbd>Leertaste</kbd> Drift</span>
-        <span><kbd>Esc</kbd> Pause</span>
-        <span>Gamepad: <kbd>RT</kbd>/<kbd>A</kbd> Gas, <kbd>LT</kbd>/<kbd>B</kbd> Bremse, <kbd>LB</kbd>/<kbd>RB</kbd> Drift, Stick lenken, <kbd>Start</kbd> Pause</span>
-      </div>
       <p class="hint touch-hint">Touch: links lenken, rechts Gas, Bremse und Drift. Am besten im Querformat.</p>
       <p class="hint">Drift: Taste halten und lenken. Blaue oder orange Funken? Loslassen gibt einen Mini-Turbo.</p>
     </div>

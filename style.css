@@ -189,3 +189,11 @@ h1 { display: inline; }
 
 /* Auswahl per Gamepad */
 .padfocus { outline: 3px solid #fff !important; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(255, 181, 46, 0.55); }
+
+/* Aufklappbare Optionen */
+.opts { margin-top: 10px; }
+.opts summary { cursor: pointer; color: var(--dim); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+.opts[open] summary { margin-bottom: 4px; }
+@media (max-width: 560px) { .avatar img { height: 44px; } }
+@media (max-height: 450px) { .sub { display: none; } .avatar { padding: 2px; } .avatar img { height: 40px; } }
+@media (max-width: 560px) { #trackInfo { display: none; } }

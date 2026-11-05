@@ -11,13 +11,14 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 - Arcade-Fahrphysik, Drift mit Mini-Turbo (blaue und orange Funken)
 - Countdown mit Ampel und Start-Turbo
 - Verfolgerkamera, Motor- und Reifenton
-- Ein KI-Gegner mit neutraler Fahrweise
+- Ein KI-Gegner in drei Stufen: Leicht, Normal, Schwer
 - Minikarte und Abstand zum Vorder- und Hintermann
 - Rampen, Bodenwellen und Pfützen
 - Split-Screen für 2 Spieler (oben/unten): Tastatur geteilt, zwei Gamepads oder gemischt
 - Gamepad (Xbox-Belegung, andere Gamepads über die Standard-Belegung des Browsers)
 - Touch-Steuerung für das Einzelspiel
 - Grafik-Stufe Schnell/Schön und Anzeige der Bilder pro Sekunde
+- Optional: Himmel mit Wolken, Sonne und Lens-Flare; Vögel an der Strecke (bei Grafik Schön)
 - Menü komplett per Gamepad bedienbar
 - Offline spielbar nach dem ersten Laden
 
@@ -47,7 +48,9 @@ Kart-Rennspiel im Browser. Gebaut mit Three.js, ohne Build-Schritt.
 
 **Menü per Gamepad:** Steuerkreuz oder Stick wählt, A bestätigt, B geht zurück. Start startet das Rennen oder pausiert.
 
-**Grafik:** "Schnell" für schwache Rechner (keine Kantenglättung, niedrigere Auflösung, weniger Bäume, kürzere Sicht, kein Rauch). Der Wechsel lädt die Seite neu. "Bilder/s" zeigt die Bildrate unten in der Mitte.
+**Optionen** (im Menü aufklappen): Lautstärke, Grafik, Bilder/s, Himmel und die Tastenübersicht.
+
+**Grafik:** "Schnell" für schwache Rechner (keine Kantenglättung, niedrigere Auflösung, weniger Bäume, kürzere Sicht, kein Rauch). Der Wechsel lädt die Seite neu. "Bilder/s" zeigt die Bildrate unten in der Mitte. "Himmel" schaltet Wolken, Sonne und Lens-Flare zu (kostet etwas Leistung, daher standardmäßig aus).
 
 **Offline:** Nach dem ersten Laden speichert der Browser alle Dateien. Danach startet das Spiel auch ohne Internet.
 

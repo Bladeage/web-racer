@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildTrack, TRACKS, pointAt, groundHeight, inPuddle } from '../src/track.js';
 import { AVATARS } from '../src/avatars.js';
 import { createKart, stepKart, collideWall, checkPads, stepVertical } from '../src/kart.js';
-import { createAi, aiInput } from '../src/ai.js';
+import { createAi, aiInput, AI_LEVELS } from '../src/ai.js';
 import { createRace, stepRace } from '../src/race.js';
 
 const DT = 1 / 120;
@@ -31,4 +31,26 @@ for (const def of TRACKS) for (const av of [AVATARS[0], AVATARS[2]]) test(`KI ($
   assert.equal(race.phase, 'done');
   assert.equal(hard, 0);
   assert.ok(e.lapTimes.every(t => t > 10 && t < 40));
+});
+
+for (const def of TRACKS) for (const lvl of ['leicht', 'schwer']) test(`KI-Stufe ${lvl} faehrt 3 Runden auf ${def.name} ohne harte Bandenkontakte`, () => {
+  const track = buildTrack(def);
+  const p = pointAt(track, track.lineS - 6);
+  const k = createKart(p.x, p.z, Math.atan2(p.tx, p.tz), AVATARS[0].stats);
+  collideWall(k, track);
+  const ai = createAi(AI_LEVELS[lvl]);
+  const race = createRace(track, [{ kart: k, name: 'KI' }], 3);
+  let hard = 0;
+  for (let i = 0; i < 200 / DT && race.phase !== 'done'; i++) {
+    stepRace(race, DT);
+    const inp = race.phase === 'countdown' ? { throttle: 0, brake: 0, steer: 0, drift: false } : aiInput(ai, k, track);
+    stepKart(k, inp, DT);
+    collideWall(k, track);
+    checkPads(k, track);
+    stepVertical(k, groundHeight(track, k.s, k.d), inPuddle(track, k.s, k.d), DT);
+    if (k.wallHit > 2) hard++;
+  }
+  console.log(def.name, lvl, 'Rundenzeiten', race.entries[0].lapTimes.map(t => t.toFixed(2)).join(' / '));
+  assert.equal(race.phase, 'done');
+  assert.equal(hard, 0);
 });
