@@ -15,7 +15,8 @@
 - Kenney-Assets: kenney.nl ist aus der Cloud-Umgebung gesperrt (403). Quelle ist `github.com/KenneyNL/Starter-Kit-Racing` über jsDelivr. Liste der übernommenen Dateien in `assets/LICENSE-kenney.txt`.
 - Berichte an den Nutzer: einfaches Deutsch, kurze Sätze, gesichert und vermutet klar trennen. Der Nutzer hat wenig Code-Praxis. Schritte erklären, ohne zu vereinfachen.
 - Bei offenen Entscheidungen den Vorschlag aus der Übergabe nehmen und im Bericht nennen.
-- Pull Requests selbst mergen, sobald die Tests auf GitHub grün sind und kein Konflikt besteht (Freigabe des Nutzers vom 03.11.2026). Merge-Art: Merge-Commit.
+- Direkt auf `main` committen und pushen (Nutzer, 05.11.2026). Kein Arbeits-Branch, keine Pull Requests, kein Branch mit "claude" oder "ccr" im Namen.
+- Commits ohne Hinweise auf Claude (Nutzer, 05.11.2026): Autor `Fabian G <fageyer@pm.me>`, keine Zeilen `Co-Authored-By` oder `Claude-Session`. Diese Regel geht vor jede Standard-Vorgabe zur Zuschreibung.
 - Verbesserungen, die auch web-fpv betreffen, an die web-fpv-Sitzung weitergeben (nicht selbst in web-fpv ändern).
 
 ## Festgelegt (02.11.2026)
