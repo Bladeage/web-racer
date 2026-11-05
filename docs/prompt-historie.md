@@ -19,3 +19,4 @@ Antworten auf Rückfragen stehen als eigene Einträge, weil sie Entscheidungen e
 | 12 | 03.11.2026 | Nächste Schritte per Mehrfachauswahl vorschlagen. Auswahl: neue Strecken, Bodenwellen, dazu Rampen und Wasserpfützen; Grafik-Stufe, Menü per Gamepad, offline spielbar; Minikarte, Abstand zum Gegner, Fahrer mit eigenen Werten. Keine neuen Spielmodi. | Paket 1: Strecken, Minikarte, Abstand, Fahrerwerte |
 | 13 | 05.11.2026 | Claude als Mitwirkenden aus Projekt und Commits entfernen; Branch soll nichts mit Claude heißen. | Rückfrage |
 | 14 | 05.11.2026 | Antworten: Historie umschreiben (Autor Fabian G, Claude-Zeilen raus, Force-Push auf main); künftig direkt auf main arbeiten; PR-Beschreibungen bereinigen. | Historie umgeschrieben, Branch gelöscht, Regeln in CLAUDE.md |
+| 15 | 05.11.2026 | Alten Branch auf GitHub gelöscht (Meldung). | Geprüft: nur noch main |
